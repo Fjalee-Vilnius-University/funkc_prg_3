@@ -10,6 +10,18 @@ import Task3Message
     ---halts
 ---exit code
 
+--minimax
+    --return every posibility [posibilities]
+        --goes 9 times, checks every sq
+            --if sq null, create move
+    --calc score
+        -- if game end
+            -- player * sqLeft+1; where player is -1 or 1
+        -- else calc score
+
+
+
+
 data JsonLikeValue = JLString String | JLInt Int | JLMap [(String, JsonLikeValue)] | JLArray [JsonLikeValue] deriving (Show, Eq)
 data InvalidState = Order | Duplicates deriving (Show, Eq)
 type To = [[(Int, Char)]]
@@ -155,6 +167,9 @@ parseJLString str orgStr =
                 _ -> Left ("Error around character " ++ show errPos ++ ", Invalid string")
             else Left ("Error around character " ++ show errPos ++ ", Length of the string was not declared")
 
+-----------------------------------------------------------------
+
+convert :: JsonLikeValue -> Either InvalidState ([Int], [Int], [Char])
 convert wholeMap = getAllTurnsArr wholeMap ([], [], [])
 
 getAllTurnsArr :: JsonLikeValue -> ([Int], [Int], [Char]) -> Either InvalidState ([Int], [Int], [Char])
@@ -220,3 +235,7 @@ delFromMap :: JsonLikeValue -> (String, JsonLikeValue) -> JsonLikeValue
 delFromMap wholeMap itemDel = 
     case wholeMap of
         JLMap arrayOfTuples -> JLMap $ delete itemDel arrayOfTuples
+
+---------------------------------------
+
+--calcScore :: 
