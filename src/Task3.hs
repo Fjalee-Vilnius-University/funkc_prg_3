@@ -29,7 +29,7 @@ type To = [[(Int, Char)]]
 -- message' = "d4:prevd4:prevd4:prevd4:lastd2:ysli1ee2:vsl1:Oe2:xsli0eee4:prevd4:lastd2:ysli2ee2:vsl1:Xe2:xsli0eee4:prevd4:lastd2:ysli0ee2:vsl1:Oe2:xsli2eee4:prevd4:prevd4:lastd2:ysli2ee2:vsl1:Oe2:xsli2eee4:prevd4:lastd2:ysli0ee2:vsl1:Xe2:xsli0eeeee4:lastd2:ysli1ee2:vsl1:Xe2:xsli2eeeeeee4:lastd2:ysli2ee2:vsl1:Xe2:xsli1eeee4:lastd2:ysli0ee2:vsl1:Oe2:xsli1eeee4:lastd2:ysli1ee2:vsl1:Xe2:xsli1eeee"
 
 p = parse message
-c = convert (either error id (parse message))
+c = convert 3 (either error id (parse message))
 
 parse :: String -> Either String JsonLikeValue
 parse str = 
@@ -169,8 +169,57 @@ parseJLString str orgStr =
 
 -----------------------------------------------------------------
 
-convert :: JsonLikeValue -> Either InvalidState ([Int], [Int], [Char])
-convert wholeMap = getAllTurnsArr wholeMap ([], [], [])
+convert :: Int -> JsonLikeValue -> Either InvalidState To
+convert size wholeMap =
+    case getAllTurnsArr wholeMap ([], [], []) of
+        Left a -> Left a
+        Right allTurnsArr -> parseArrToLIL allTurnsArr (createEmptyLILArr size [])
+        
+createEmptyLILArr :: Int -> [[(Int, Char)]] -> [[(Int, Char)]]
+createEmptyLILArr 0 arr = arr
+createEmptyLILArr size arr = createEmptyLILArr (size-1) (arr ++ [[]])
+
+parseArrToLIL :: ([Int], [Int], [Char]) -> [[(Int, Char)]] -> Either InvalidState [[(Int, Char)]]
+parseArrToLIL ([], [], []) lilArr = Right lilArr
+parseArrToLIL (xsArr, ysArr, vsArr) lilArr = 
+    let
+        ythArr = lilArr !! head ysArr
+        newMove = (head xsArr, head vsArr)
+    in 
+        case addMoveToArr ythArr newMove of
+            Left a -> Left a
+            Right a -> parseArrToLIL (tail xsArr, tail ysArr, tail vsArr) (replace a (head ysArr) lilArr)
+
+replace :: a -> Int -> [a] -> [a]
+replace newEl 0 arr = newEl: (tail arr)
+replace newEl i (a:arr) = (a : replace newEl (i-1) arr)
+
+addMoveToArr :: [(Int, Char)] -> (Int, Char) -> Either InvalidState [(Int, Char)]
+addMoveToArr allMovesArr (x, v) = 
+    case findPosToInsert allMovesArr x 0 of
+        Left a -> Left a
+        Right pos -> Right $ insertAt (x,v) pos allMovesArr
+
+insertAt :: a -> Int -> [a] -> [a]
+insertAt newEl _ [] = [newEl]
+insertAt newEl 0 arr = (newEl:arr)
+insertAt newEl i (a:arr) = (a : insertAt newEl (i - 1) arr)
+
+findPosToInsert :: [(Int, Char)] -> Int -> Int -> Either InvalidState Int
+findPosToInsert [] _ _ = Right 0
+findPosToInsert arr cord ptr = 
+    if ((length arr) - 1 < ptr)
+    then Right (ptr)
+    else
+        if (fst (arr !! ptr)) == cord
+        then Left Duplicates
+        else
+            if (fst (arr !! ptr)) > cord
+            then Right (ptr)
+            else 
+                case findPosToInsert arr cord (ptr+1) of
+                    Left a -> Left a
+                    Right a -> Right a
 
 getAllTurnsArr :: JsonLikeValue -> ([Int], [Int], [Char]) -> Either InvalidState ([Int], [Int], [Char])
 getAllTurnsArr wholeMap allTurnsArr = 
@@ -235,6 +284,8 @@ delFromMap :: JsonLikeValue -> (String, JsonLikeValue) -> JsonLikeValue
 delFromMap wholeMap itemDel = 
     case wholeMap of
         JLMap arrayOfTuples -> JLMap $ delete itemDel arrayOfTuples
+
+
 
 ---------------------------------------
 
