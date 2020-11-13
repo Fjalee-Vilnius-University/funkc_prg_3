@@ -29,7 +29,9 @@ type To = [[(Int, Char)]]
 -- message' = "d4:prevd4:prevd4:prevd4:lastd2:ysli1ee2:vsl1:Oe2:xsli0eee4:prevd4:lastd2:ysli2ee2:vsl1:Xe2:xsli0eee4:prevd4:lastd2:ysli0ee2:vsl1:Oe2:xsli2eee4:prevd4:prevd4:lastd2:ysli2ee2:vsl1:Oe2:xsli2eee4:prevd4:lastd2:ysli0ee2:vsl1:Xe2:xsli0eeeee4:lastd2:ysli1ee2:vsl1:Xe2:xsli2eeeeeee4:lastd2:ysli2ee2:vsl1:Xe2:xsli1eeee4:lastd2:ysli0ee2:vsl1:Oe2:xsli1eeee4:lastd2:ysli1ee2:vsl1:Xe2:xsli1eeee"
 
 p = parse message
-c = convert 3 (either error id (parse message))
+c = case convert 3 (either error id (parse message)) of
+    Right a -> a
+    Left a -> error $ "Ivalid state" ++ show a
 
 parse :: String -> Either String JsonLikeValue
 parse str = 
@@ -289,4 +291,22 @@ delFromMap wholeMap itemDel =
 
 ---------------------------------------
 
---calcScore :: 
+-- calcScore :: To -> Int
+-- calcScore (row1 : row2 : row3 : []) = 
+--     populateBlankVals (row1 : row2 : row3 : [])
+-- calcScore b = error $ "Cannot calculate board score: Invalid board " ++ show b
+
+populateBlankVals :: To -> To
+populateBlankVals (row1 : row2 : row3 : []) 
+    | (length row1 /= 3) = populateBlankVals ((addLowestBlank row1 0) : row2 : row3 : [])
+    | (length row2 /= 3) = populateBlankVals (row1 : (addLowestBlank row2 0) : row3 : [])
+    | (length row3 /= 3) = populateBlankVals (row1 : row2 : (addLowestBlank row3 0) : [])
+    | otherwise = (row1 : row2 : row3 : []) 
+populateDummyVals :: Show a1 => a1 -> a2
+populateDummyVals b = error $ "Cannot populate board with blank values: Invalid board " ++ show b
+
+addLowestBlank :: [(Int, Char)] -> Int -> [(Int, Char)]
+addLowestBlank row acc  
+    | (length row < acc+1) = insertAt (acc, 'b') acc row
+    | (fst (row !! acc) == acc) = addLowestBlank row (acc+1)
+    | otherwise = insertAt (acc, 'b') acc row
