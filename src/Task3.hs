@@ -11,6 +11,13 @@ import Task3Message
 ---exit code
 
 data JsonLikeValue = JLString String | JLInt Int | JLMap [(String, JsonLikeValue)] | JLArray [JsonLikeValue] deriving (Show, Eq)
+data InvalidState = Order | Duplicates deriving (Show, Eq)
+type To = [[(Int, Char)]]
+
+-- message' = "d4:prevd4:prevd4:prevd4:lastd2:ysli1ee2:vsl1:Oe2:xsli0eee4:prevd4:lastd2:ysli2ee2:vsl1:Xe2:xsli0eee4:prevd4:lastd2:ysli0ee2:vsl1:Oe2:xsli2eee4:prevd4:prevd4:lastd2:ysli2ee2:vsl1:Oe2:xsli2eee4:prevd4:lastd2:ysli0ee2:vsl1:Xe2:xsli0eeeee4:lastd2:ysli1ee2:vsl1:Xe2:xsli2eeeeeee4:lastd2:ysli2ee2:vsl1:Xe2:xsli1eeee4:lastd2:ysli0ee2:vsl1:Oe2:xsli1eeee4:lastd2:ysli1ee2:vsl1:Xe2:xsli1eeee"
+
+p = parse message
+c = convert (either error id (parse message))
 
 parse :: String -> Either String JsonLikeValue
 parse str = 
@@ -147,3 +154,69 @@ parseJLString str orgStr =
                 (':':r) -> Right (JLString $ L.take (read (L.takeWhile C.isDigit str)) r, L.drop (read (L.takeWhile C.isDigit str)) r)
                 _ -> Left ("Error around character " ++ show errPos ++ ", Invalid string")
             else Left ("Error around character " ++ show errPos ++ ", Length of the string was not declared")
+
+convert wholeMap = getAllTurnsArr wholeMap ([], [], [])
+
+getAllTurnsArr :: JsonLikeValue -> ([Int], [Int], [Char]) -> Either InvalidState ([Int], [Int], [Char])
+getAllTurnsArr wholeMap allTurnsArr = 
+    case mapFind wholeMap "last" of
+        Just lstLast -> 
+            let
+                allTurnsArr' = addTurn lstLast allTurnsArr
+            in
+                case isCorrOrder allTurnsArr' of 
+                    False -> Left Order
+                    True ->
+                        case delFromMap wholeMap ("last", lstLast) of
+                            JLMap (h:_) -> getAllTurnsArr (snd h) allTurnsArr'
+                            JLMap [] -> Right allTurnsArr'
+
+mapFind :: JsonLikeValue -> String -> Maybe JsonLikeValue 
+mapFind (JLMap []) _ = Nothing
+mapFind (JLMap (h:t)) needed = 
+    if (fst h) == needed
+    then Just $ snd h
+    else mapFind (JLMap t) needed
+
+addTurn :: JsonLikeValue -> ([Int],[Int],[Char]) -> ([Int],[Int],[Char])
+addTurn turn (xsArr,ysArr,vsArr) = 
+    case turn of
+        JLArray [] -> (xsArr,ysArr,vsArr)
+        JLArray (JLMap (turnTuple) : []) -> 
+                    let
+                        turnArr = snd $ head turnTuple
+                        xsParsedInt = parseJLIntToInt $ (parseJLArrayToArray turnArr) !! 0
+                        ysParsedInt = parseJLIntToInt $ (parseJLArrayToArray turnArr) !! 1
+                        vsParsedStr = parseJLStringToString $ (parseJLArrayToArray turnArr) !! 2
+                    in
+                        (xsArr ++ [xsParsedInt], ysArr ++ [ysParsedInt], vsArr ++ vsParsedStr)
+        a -> error $ "Turn has to be in an array, but received " ++  show a
+
+parseJLIntToInt :: JsonLikeValue -> Int
+parseJLIntToInt theInt =
+    case theInt of
+        JLInt a -> a
+
+parseJLStringToString :: JsonLikeValue -> String
+parseJLStringToString str =
+    case str of
+        JLString a -> a
+        a -> error $ show a
+
+parseJLArrayToArray :: JsonLikeValue -> [JsonLikeValue]
+parseJLArrayToArray arr =
+    case arr of
+        JLArray a -> a
+
+isCorrOrder :: ([Int], [Int], [Char]) -> Bool
+isCorrOrder (_, _, []) = True
+isCorrOrder (_, _, (_:[])) = True
+isCorrOrder (_, _, vsArr) = 
+    if head (reverse vsArr) == head (drop 1 (reverse vsArr))
+    then False
+    else True
+
+delFromMap :: JsonLikeValue -> (String, JsonLikeValue) -> JsonLikeValue
+delFromMap wholeMap itemDel = 
+    case wholeMap of
+        JLMap arrayOfTuples -> JLMap $ delete itemDel arrayOfTuples
