@@ -278,14 +278,17 @@ delFromMap wholeMap itemDel =
 
 ---------------------------------------
 
-start :: (To, String)
+start :: IO ()
 start =
     let
         board = populateBlankVals getLilBoard
     in
         if (isBoardFilled board || (isWin board /= 'b'))
-            then (board, "I cannot perform any moves because game is already ended (board is full or there is a winner")
-            else (makeNextStep board, "")
+            then printStatusMessage $ (board, "I cannot perform any moves because game is already ended (board is full or there is a winner")
+            else printStatusMessage $ (makeNextStep board, "")
+
+printStatusMessage :: (To, String) -> IO ()
+printStatusMessage (board, msg) = putStr $ unlines $ [msg, getStrToDrawBoard board]
 
 makeNextStep :: To -> To
 makeNextStep board =
@@ -446,3 +449,35 @@ whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 :
     | (snd sq8 == 'b') = Right (2, 1)
     | (snd sq9 == 'b') = Right (2, 2)
     | otherwise = Left "no blank sq"
+
+getStrToDrawBoard :: To -> String
+getStrToDrawBoard board=
+    let
+        board' = replaceAllBWithSpace board
+        ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) = board'
+    in
+        unlines $ [[snd sq1] ++  " | " ++  [snd sq2] ++ " | " ++ [snd sq3] ,
+                   "---------",
+                   [snd sq4] ++  " | " ++  [snd sq5] ++ " | " ++ [snd sq6] ,
+                   "---------",
+                   [snd sq7] ++  " | " ++  [snd sq8] ++ " | " ++ [snd sq9]]
+
+replaceAllBWithSpace :: To -> To
+replaceAllBWithSpace ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) = 
+    let
+        sq1' = (fst sq1 ,ifBSpace $ snd sq1)
+        sq2' = (fst sq2 ,ifBSpace $ snd sq2)
+        sq3' = (fst sq3 ,ifBSpace $ snd sq3)
+        sq4' = (fst sq4 ,ifBSpace $ snd sq4)
+        sq5' = (fst sq5 ,ifBSpace $ snd sq5)
+        sq6' = (fst sq6 ,ifBSpace $ snd sq6)
+        sq7' = (fst sq7 ,ifBSpace $ snd sq7)
+        sq8' = (fst sq8 ,ifBSpace $ snd sq8)
+        sq9' = (fst sq9 ,ifBSpace $ snd sq9)
+    in
+        [[sq1', sq2', sq3'], [sq4', sq5', sq6'], [sq7', sq8', sq9']]
+
+ifBSpace :: Char -> Char
+ifBSpace ch
+    |(ch == 'b') = ' '
+    | otherwise = ch
