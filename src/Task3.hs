@@ -15,10 +15,8 @@ data JsonLikeValue = JLString String | JLInt Int | JLMap [(String, JsonLikeValue
 data InvalidState = Order | Duplicates deriving (Show, Eq)
 type To = [[(Int, Char)]]
 
--- message' = "d4:prevd4:prevd4:prevd4:lastd2:ysli1ee2:vsl1:Oe2:xsli0eee4:prevd4:lastd2:ysli2ee2:vsl1:Xe2:xsli0eee4:prevd4:lastd2:ysli0ee2:vsl1:Oe2:xsli2eee4:prevd4:prevd4:lastd2:ysli2ee2:vsl1:Oe2:xsli2eee4:prevd4:lastd2:ysli0ee2:vsl1:Xe2:xsli0eeeee4:lastd2:ysli1ee2:vsl1:Xe2:xsli2eeeeeee4:lastd2:ysli2ee2:vsl1:Xe2:xsli1eeee4:lastd2:ysli0ee2:vsl1:Oe2:xsli1eeee4:lastd2:ysli1ee2:vsl1:Xe2:xsli1eeee"
-
-p = parse message
-c = case convert 3 (either error id (parse message)) of
+getLilBoard :: To
+getLilBoard = case convert 3 (either error id (parse message)) of
     Right a -> a
     Left a -> error $ "Ivalid state" ++ show a
 
@@ -280,23 +278,20 @@ delFromMap wholeMap itemDel =
 
 ---------------------------------------
 
-
-
-test = 
+start :: (To, String)
+start =
     let
-        board = [[(1,'O'),(2,'X')],[(0,'X'),(1,'X'), (2, 'O')],[]]
+        board = populateBlankVals getLilBoard
     in
-        makeNextStep board
+        if (isBoardFilled board || (isWin board /= 'b'))
+            then (board, "I cannot perform any moves because game is already ended (board is full or there is a winner")
+            else (makeNextStep board, "")
 
 makeNextStep :: To -> To
-makeNextStep board = 
-    let
-        board' = populateBlankVals board
-    in
-        case findWinStep board' of
+makeNextStep board =
+        case findWinStep board of
             Just b -> b
-            Nothing -> findNonDoomedBoard $ genAllPossibleMoves board' board' []
-
+            Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
 
 findNonDoomedBoard :: [To] -> To
 findNonDoomedBoard [] = error "The board is doomed for me to lose, there is no possible move that would save me, lord Aurelion Sol forgive me for have a sined and save me from the Yasuo's torture"
