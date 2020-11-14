@@ -340,3 +340,23 @@ isBoardFilled ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 
        snd sq6 /= 'b' && snd sq7 /= 'b' && snd sq8 /= 'b' && snd sq9 /= 'b') = True
     | otherwise = False
 isBoardFilled b = error $ "Cannot check if board is filled: Invalid board " ++ show b
+
+calcBlankSq :: To -> Int
+calcBlankSq ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : []) = 
+    let 
+        b1 = isSqBlank sq1
+        b2 = isSqBlank sq2
+        b3 = isSqBlank sq3
+        b4 = isSqBlank sq4
+        b5 = isSqBlank sq5
+        b6 = isSqBlank sq6
+        b7 = isSqBlank sq7
+        b8 = isSqBlank sq8
+        b9 = isSqBlank sq9
+    in 
+        b1 + b2 + b3 + b4 + b5 + b6 + b7 + b8 + b9
+
+isSqBlank :: (Int, Char) -> Int
+isSqBlank sq
+    | (snd sq == 'b') = 1
+    | otherwise = 0
