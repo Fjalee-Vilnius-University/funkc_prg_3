@@ -291,10 +291,17 @@ delFromMap wholeMap itemDel =
 
 ---------------------------------------
 
--- calcScore :: To -> Int
--- calcScore (row1 : row2 : row3 : []) = 
---     populateBlankVals (row1 : row2 : row3 : [])
--- calcScore b = error $ "Cannot calculate board score: Invalid board " ++ show b
+calcScore :: To -> Int
+calcScore board = 
+    let
+        board' = populateBlankVals board
+    in
+        case isWin board' of
+            'x' -> 10
+            'o' -> -10
+            'b' 
+               | (isBoardFilled board') -> 0
+               | otherwise -> 50
 
 populateBlankVals :: To -> To
 populateBlankVals (row1 : row2 : row3 : []) 
