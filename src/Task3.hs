@@ -10,17 +10,6 @@ import Task3Message
     ---halts
 ---exit code
 
---minimax
-    --return every posibility [posibilities]
-        --goes 9 times, checks every sq
-            --if sq null, create move
-    --calc score
-        -- if game end
-            -- player * sqLeft+1; where player is -1 or 1
-        -- else calc score
-
-
-
 
 data JsonLikeValue = JLString String | JLInt Int | JLMap [(String, JsonLikeValue)] | JLArray [JsonLikeValue] deriving (Show, Eq)
 data InvalidState = Order | Duplicates deriving (Show, Eq)
@@ -302,6 +291,31 @@ calcScore board =
             'b' 
                | (isBoardFilled board') -> 0
                | otherwise -> 50
+            
+test = 
+    genAllPossibleMoves board genBoard [] 'x'
+    where
+        board = [[(0,'b'),(1,'x'),(2,'o')],[(0,'x'),(1,'x'),(2,'b')],[(0,'b'),(1,'b'),(2,'o')]]
+        genBoard = board
+
+genAllPossibleMoves :: To -> To -> [To] -> Char -> [To]
+genAllPossibleMoves board genBoard acc player  = 
+    case genPossibleMove board genBoard player of
+            Left _ -> acc
+            Right (newMove, newGenBoard) -> genAllPossibleMoves board newGenBoard (acc ++ [newMove]) player
+
+genPossibleMove :: To -> To -> Char -> Either String (To, To)
+genPossibleMove orgBoard board player = 
+    case whichSqBlank board of
+        Left _ -> Left "No more possible moves"
+        Right (row, col) -> 
+            let 
+                newRowForMove = replace (col, player) col (orgBoard !! row)
+                newMove = replace newRowForMove row orgBoard
+                newRowForBoard = replace (col, player) col (board !! row)
+                newBoard = replace newRowForBoard row board
+            in
+                Right (newMove, newBoard)
 
 populateBlankVals :: To -> To
 populateBlankVals (row1 : row2 : row3 : []) 
@@ -360,3 +374,16 @@ isSqBlank :: (Int, Char) -> Int
 isSqBlank sq
     | (snd sq == 'b') = 1
     | otherwise = 0
+
+whichSqBlank :: To -> Either String (Int, Int) 
+whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
+    | (snd sq1 == 'b') = Right (0, 0)
+    | (snd sq2 == 'b') = Right (0, 1)
+    | (snd sq3 == 'b') = Right (0, 2)
+    | (snd sq4 == 'b') = Right (1, 0)
+    | (snd sq5 == 'b') = Right (1, 1)
+    | (snd sq6 == 'b') = Right (1, 2)
+    | (snd sq7 == 'b') = Right (2, 0)
+    | (snd sq8 == 'b') = Right (2, 1)
+    | (snd sq9 == 'b') = Right (2, 2)
+    | otherwise = Left "no blank sq"
