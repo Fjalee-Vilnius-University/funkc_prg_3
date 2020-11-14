@@ -311,10 +311,6 @@ addLowestBlank row acc
     | (fst (row !! acc) == acc) = addLowestBlank row (acc+1)
     | otherwise = insertAt (acc, 'b') acc row
 
--- isEnd (row1 : row2 : row3 : []) =
-
--- isEnd b = error $ "Cannot check if game ended: Invalid board " ++ show b
-
 isWin :: To -> Char
 isWin ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
     --Diagonals
