@@ -310,3 +310,23 @@ addLowestBlank row acc
     | (length row < acc+1) = insertAt (acc, 'b') acc row
     | (fst (row !! acc) == acc) = addLowestBlank row (acc+1)
     | otherwise = insertAt (acc, 'b') acc row
+
+-- isEnd (row1 : row2 : row3 : []) =
+
+-- isEnd b = error $ "Cannot check if game ended: Invalid board " ++ show b
+
+isWin :: To -> Char
+isWin ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
+    --Diagonals
+    | (snd sq1 == snd sq5 && snd sq5 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    | (snd sq3 == snd sq5 && snd sq5 == snd sq7 && snd sq7 /= 'b') = snd sq7
+    --Horizontals
+    | (snd sq1 == snd sq2 && snd sq2 == snd sq3 && snd sq3 /= 'b') = snd sq3
+    | (snd sq4 == snd sq5 && snd sq5 == snd sq6 && snd sq6 /= 'b') = snd sq6
+    | (snd sq7 == snd sq8 && snd sq8 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    --Verticals
+    | (snd sq1 == snd sq4 && snd sq4 == snd sq7 && snd sq7 /= 'b') = snd sq7
+    | (snd sq2 == snd sq5 && snd sq5 == snd sq8 && snd sq8 /= 'b') = snd sq8
+    | (snd sq3 == snd sq6 && snd sq6 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    | otherwise = 'b'
+isWin b = error $ "Cannot check if player won diagonaly: Invalid board " ++ show b
