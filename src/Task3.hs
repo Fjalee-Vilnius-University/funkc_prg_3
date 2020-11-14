@@ -280,24 +280,34 @@ delFromMap wholeMap itemDel =
 
 ---------------------------------------
 
-test = 
-    let
-        board = [[(0,'b'),(1,'X'),(2,'O')],[(0,'X'),(1,'X')],[(2,'O')]]
-        board' = populateBlankVals board
-    in
-        findWinStep board'
+-- test = 
+--     let
+--         board = [[(0,'b'),(1,'X'),(2,'O')],[(0,'X'),(1,'X')],[(2,'X')]]
+--         board' = populateBlankVals board
+--     in
+--         case findWinStep board' of
+--             Just b -> b
+--             Nothing -> []
 
-findWinStep board = 
-    let
-        player
-            | isXTurn board = ('X', 10)
-            | otherwise = ('O', -10)
-        allPossMoves = genAllPossibleMoves board board [] (fst player)
-        allPossScores = calcAllBoardsScore allPossMoves []
-    in
-        case findIndex (== (snd player)) allPossScores of
-            Nothing -> []
-            Just i -> allPossMoves !! i
+-- test2 board =
+--     let
+--         board = [[(0,'b'),(1,'X'),(2,'O')],[(0,'X'),(1,'X')],[(2,'X')]]
+--         board' = populateBlankVals board
+--         allPossMoves = genAllPossibleMoves board' board' [] (fst player)
+--         allPossScores = calcAllBoardsScore allPossMoves []
+--     in
+
+-- findWinStep board = 
+--     let
+--         player
+--             | isXTurn board = ('X', 10)
+--             | otherwise = ('O', -10)
+--         allPossMoves = genAllPossibleMoves board board [] (fst player)
+--         allPossScores = calcAllBoardsScore allPossMoves []
+--     in
+--         case findIndex (== (snd player)) allPossScores of
+--             Nothing -> Nothing
+--             Just i -> Just $ allPossMoves !! i
 
 isXTurn :: To -> Bool
 isXTurn ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) =
@@ -334,18 +344,21 @@ calcScore board =
                | (isBoardFilled board') -> 0
                | otherwise -> 50
 
-genAllPossibleMoves :: To -> To -> [To] -> Char -> [To]
-genAllPossibleMoves board genBoard acc player  = 
-    case genPossibleMove board genBoard player of
+genAllPossibleMoves :: To -> To -> [To] -> [To]
+genAllPossibleMoves board genBoard acc = 
+    case genPossibleMove board genBoard of
             Left _ -> acc
-            Right (newMove, newGenBoard) -> genAllPossibleMoves board newGenBoard (acc ++ [newMove]) player
+            Right (newMove, newGenBoard) -> genAllPossibleMoves board newGenBoard (acc ++ [newMove])
 
-genPossibleMove :: To -> To -> Char -> Either String (To, To)
-genPossibleMove orgBoard board player = 
+genPossibleMove :: To -> To -> Either String (To, To)
+genPossibleMove orgBoard board = 
     case whichSqBlank board of
         Left _ -> Left "No more possible moves"
         Right (row, col) -> 
             let 
+                player
+                    | isXTurn orgBoard = 'X'
+                    | otherwise = 'O'
                 newRowForMove = replace (col, player) col (orgBoard !! row)
                 newMove = replace newRowForMove row orgBoard
                 newRowForBoard = replace (col, player) col (board !! row)
