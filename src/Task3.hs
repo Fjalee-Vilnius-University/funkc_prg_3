@@ -330,3 +330,10 @@ isWin ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  :
     | (snd sq3 == snd sq6 && snd sq6 == snd sq9 && snd sq9 /= 'b') = snd sq9
     | otherwise = 'b'
 isWin b = error $ "Cannot check if player won diagonaly: Invalid board " ++ show b
+
+isBoardFilled :: To -> Bool
+isBoardFilled ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : [])
+    | (snd sq1 /= 'b' && snd sq2 /= 'b' && snd sq3 /= 'b' && snd sq4 /= 'b' && snd sq5 /= 'b' &&
+       snd sq6 /= 'b' && snd sq7 /= 'b' && snd sq8 /= 'b' && snd sq9 /= 'b') = True
+    | otherwise = False
+isBoardFilled b = error $ "Cannot check if board is filled: Invalid board " ++ show b
