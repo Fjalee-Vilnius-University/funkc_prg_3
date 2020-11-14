@@ -280,6 +280,18 @@ delFromMap wholeMap itemDel =
 
 ---------------------------------------
 
+test = 
+    let
+        board = [[(0,'b'),(1,'x'),(2,'o')],[(0,'x'),(1,'x'),(2,'b')],[(0,'b'),(1,'b'),(2,'o')]]
+        allBoards = genAllPossibleMoves board board [] 'o'
+    in
+        calcAllBoardsScore allBoards []
+
+calcAllBoardsScore :: [To] -> [Int] -> [Int]
+calcAllBoardsScore [] acc = acc
+calcAllBoardsScore (h:t) acc =
+    calcAllBoardsScore t (acc ++ [calcScore h])
+
 calcScore :: To -> Int
 calcScore board = 
     let
@@ -291,12 +303,6 @@ calcScore board =
             'b' 
                | (isBoardFilled board') -> 0
                | otherwise -> 50
-            
-test = 
-    genAllPossibleMoves board genBoard [] 'x'
-    where
-        board = [[(0,'b'),(1,'x'),(2,'o')],[(0,'x'),(1,'x'),(2,'b')],[(0,'b'),(1,'b'),(2,'o')]]
-        genBoard = board
 
 genAllPossibleMoves :: To -> To -> [To] -> Char -> [To]
 genAllPossibleMoves board genBoard acc player  = 
