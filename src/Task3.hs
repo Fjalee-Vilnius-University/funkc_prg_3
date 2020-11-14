@@ -280,14 +280,23 @@ delFromMap wholeMap itemDel =
 
 ---------------------------------------
 
+
+
 test = 
     let
-        board = [[(1,'O'),(2,'X')],[(0,'X'),(1,'X')],[(2,'O')]]
+        board = [[(1,'O'),(2,'X')],[(0,'X'),(1,'X'), (2, 'O')],[]]
+    in
+        makeNextStep board
+
+makeNextStep :: To -> To
+makeNextStep board = 
+    let
         board' = populateBlankVals board
     in
         case findWinStep board' of
             Just b -> b
             Nothing -> findNonDoomedBoard $ genAllPossibleMoves board' board' []
+
 
 findNonDoomedBoard :: [To] -> To
 findNonDoomedBoard [] = error "The board is doomed for me to lose, there is no possible move that would save me, lord Aurelion Sol forgive me for have a sined and save me from the Yasuo's torture"
