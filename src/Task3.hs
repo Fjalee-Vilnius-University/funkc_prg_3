@@ -282,10 +282,41 @@ delFromMap wholeMap itemDel =
 
 test = 
     let
-        board = [[(0,'b'),(1,'x'),(2,'o')],[(0,'x'),(1,'x'),(2,'b')],[(0,'b'),(1,'b'),(2,'o')]]
-        allBoards = genAllPossibleMoves board board [] 'o'
+        board = [[(0,'b'),(1,'X'),(2,'O')],[(0,'X'),(1,'X'),(2,'b')],[(0,'b'),(1,'b'),(2,'O')]]
+        board' = populateBlankVals board
+        player
+            | isXTurn board' = 'X'
+            | otherwise = 'O'
+        allBoards = genAllPossibleMoves board' board' [] player
+        allScores = calcAllBoardsScore allBoards []
     in
-        calcAllBoardsScore allBoards []
+        (allBoards, allScores)
+
+
+ 
+test2 allB allS =
+    let
+          
+    in
+        "not implemented"
+
+isXTurn :: To -> Bool
+isXTurn ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) =
+    let
+        allTurnsValue = [snd sq1, snd sq2, snd sq3, snd sq4, snd sq5, snd sq6, snd sq7, snd sq8, snd sq9]
+        xNmTurns = calcPlayerTurns allTurnsValue 'X' 0
+        oNmTurns = calcPlayerTurns allTurnsValue 'O' 0
+    in
+        if (oNmTurns < xNmTurns)
+        then False
+        else True
+isXTurn a = error $ "Cant check if X turn: Invalid board" ++ show a
+
+calcPlayerTurns :: [Char] -> Char -> Int -> Int
+calcPlayerTurns [] _ acc = acc
+calcPlayerTurns (h:t) player acc
+    | h == player = calcPlayerTurns t player (acc + 1)
+    | otherwise = calcPlayerTurns t player acc
 
 calcAllBoardsScore :: [To] -> [Int] -> [Int]
 calcAllBoardsScore [] acc = acc
@@ -298,8 +329,8 @@ calcScore board =
         board' = populateBlankVals board
     in
         case isWin board' of
-            'x' -> 10
-            'o' -> -10
+            'X' -> 10
+            'O' -> -10
             'b' 
                | (isBoardFilled board') -> 0
                | otherwise -> 50
