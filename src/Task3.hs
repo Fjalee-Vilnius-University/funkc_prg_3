@@ -283,31 +283,49 @@ start =
     let
         board = populateBlankVals getLilBoard
     in
-        if (isBoardFilled board || (isWin board /= 'b'))
-            then printStatusMessage $ (board, "I cannot perform any moves because game is already ended (board is full or there is a winner")
-            else printStatusMessage $ (makeNextStep board, "")
+        if (isBoardFull board || (isWin board /= 'b'))
+            then printStatusMessage $ (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
+            else printStatusMessage $ (makeNextStep board, "Message is not implemented")
 
-printStatusMessage :: (To, String) -> IO ()
-printStatusMessage (board, msg) = putStr $ unlines $ [msg, getStrToDrawBoard board]
+populateBlankVals :: To -> To
+populateBlankVals (row1 : row2 : row3 : []) 
+    | (length row1 /= 3) = populateBlankVals ((addLowestBlank row1 0) : row2 : row3 : [])
+    | (length row2 /= 3) = populateBlankVals (row1 : (addLowestBlank row2 0) : row3 : [])
+    | (length row3 /= 3) = populateBlankVals (row1 : row2 : (addLowestBlank row3 0) : [])
+    | otherwise = (row1 : row2 : row3 : []) 
+populateDummyVals :: Show a1 => a1 -> a2
+populateDummyVals b = error $ "Cannot populate board with blank values: Invalid board " ++ show b
+
+isWin :: To -> Char
+isWin ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
+    --Diagonals
+    | (snd sq1 == snd sq5 && snd sq5 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    | (snd sq3 == snd sq5 && snd sq5 == snd sq7 && snd sq7 /= 'b') = snd sq7
+    --Horizontals
+    | (snd sq1 == snd sq2 && snd sq2 == snd sq3 && snd sq3 /= 'b') = snd sq3
+    | (snd sq4 == snd sq5 && snd sq5 == snd sq6 && snd sq6 /= 'b') = snd sq6
+    | (snd sq7 == snd sq8 && snd sq8 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    --Verticals
+    | (snd sq1 == snd sq4 && snd sq4 == snd sq7 && snd sq7 /= 'b') = snd sq7
+    | (snd sq2 == snd sq5 && snd sq5 == snd sq8 && snd sq8 /= 'b') = snd sq8
+    | (snd sq3 == snd sq6 && snd sq6 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    | otherwise = 'b'
+isWin b = error $ "Cannot check if player won diagonaly: Invalid board " ++ show b
+
+isBoardFull :: To -> Bool
+isBoardFull ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : [])
+    | (snd sq1 /= 'b' && snd sq2 /= 'b' && snd sq3 /= 'b' && snd sq4 /= 'b' && snd sq5 /= 'b' &&
+       snd sq6 /= 'b' && snd sq7 /= 'b' && snd sq8 /= 'b' && snd sq9 /= 'b') = True
+    | otherwise = False
+isBoardFull b = error $ "Cannot check if board is full: Invalid board " ++ show b
+
+
 
 makeNextStep :: To -> To
 makeNextStep board =
-        case findWinStep board of
-            Just b -> b
-            Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
-
-findNonDoomedBoard :: [To] -> To
-findNonDoomedBoard [] = error "The board is doomed for me to lose, there is no possible move that would save me, lord Aurelion Sol forgive me for have a sined and save me from the Yasuo's torture"
-findNonDoomedBoard (board:remBoards) =
-    case isBoardDoomed board of
-        False -> board
-        True -> findNonDoomedBoard remBoards
-
-isBoardDoomed :: To -> Bool
-isBoardDoomed board = 
     case findWinStep board of
-        Nothing -> False
-        Just _ -> True
+        Just b -> b
+        Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
 
 findWinStep :: To -> Maybe To
 findWinStep board = 
@@ -322,17 +340,21 @@ findWinStep board =
             Nothing -> Nothing
             Just i -> Just $ allPossMoves !! i
 
-isXTurn :: To -> Bool
-isXTurn ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) =
-    let
-        allTurnsValue = [snd sq1, snd sq2, snd sq3, snd sq4, snd sq5, snd sq6, snd sq7, snd sq8, snd sq9]
-        xNmTurns = calcPlayerTurns allTurnsValue 'X' 0
-        oNmTurns = calcPlayerTurns allTurnsValue 'O' 0
-    in
-        if (oNmTurns < xNmTurns)
-        then False
-        else True
-isXTurn a = error $ "Cant check if X turn: Invalid board" ++ show a
+findNonDoomedBoard :: [To] -> To
+findNonDoomedBoard [] = error "The board is doomed for me to lose, there is no possible move that would save me, lord Aurelion Sol forgive me for have a sined and save me from the Yasuo's torture"
+findNonDoomedBoard (board:remBoards) =
+    case isBoardDoomed board of
+        False -> board
+        True -> findNonDoomedBoard remBoards
+
+
+
+
+isBoardDoomed :: To -> Bool
+isBoardDoomed board = 
+    case findWinStep board of
+        Nothing -> False
+        Just _ -> True
 
 calcPlayerTurns :: [Char] -> Char -> Int -> Int
 calcPlayerTurns [] _ acc = acc
@@ -354,7 +376,7 @@ calcScore board =
             'X' -> 10
             'O' -> -10
             'b' 
-               | (isBoardFilled board') -> 0
+               | (isBoardFull board') -> 0
                | otherwise -> 50
 
 genAllPossibleMoves :: To -> To -> [To] -> [To]
@@ -366,8 +388,8 @@ genAllPossibleMoves board genBoard acc =
 genPossibleMove :: To -> To -> Either String (To, To)
 genPossibleMove orgBoard board = 
     case whichSqBlank board of
-        Left _ -> Left "No more possible moves"
-        Right (row, col) -> 
+        Nothing -> Left "No more possible moves"
+        Just (row, col) -> 
             let 
                 player
                     | isXTurn orgBoard = 'X'
@@ -379,14 +401,17 @@ genPossibleMove orgBoard board =
             in
                 Right (newMove, newBoard)
 
-populateBlankVals :: To -> To
-populateBlankVals (row1 : row2 : row3 : []) 
-    | (length row1 /= 3) = populateBlankVals ((addLowestBlank row1 0) : row2 : row3 : [])
-    | (length row2 /= 3) = populateBlankVals (row1 : (addLowestBlank row2 0) : row3 : [])
-    | (length row3 /= 3) = populateBlankVals (row1 : row2 : (addLowestBlank row3 0) : [])
-    | otherwise = (row1 : row2 : row3 : []) 
-populateDummyVals :: Show a1 => a1 -> a2
-populateDummyVals b = error $ "Cannot populate board with blank values: Invalid board " ++ show b
+isXTurn :: To -> Bool
+isXTurn ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) =
+    let
+        allTurnsValue = [snd sq1, snd sq2, snd sq3, snd sq4, snd sq5, snd sq6, snd sq7, snd sq8, snd sq9]
+        xNmTurns = calcPlayerTurns allTurnsValue 'X' 0
+        oNmTurns = calcPlayerTurns allTurnsValue 'O' 0
+    in
+        if (oNmTurns < xNmTurns)
+        then False
+        else True
+isXTurn a = error $ "Cant check if X turn: Invalid board" ++ show a
 
 addLowestBlank :: [(Int, Char)] -> Int -> [(Int, Char)]
 addLowestBlank row acc  
@@ -394,61 +419,34 @@ addLowestBlank row acc
     | (fst (row !! acc) == acc) = addLowestBlank row (acc+1)
     | otherwise = insertAt (acc, 'b') acc row
 
-isWin :: To -> Char
-isWin ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
-    --Diagonals
-    | (snd sq1 == snd sq5 && snd sq5 == snd sq9 && snd sq9 /= 'b') = snd sq9
-    | (snd sq3 == snd sq5 && snd sq5 == snd sq7 && snd sq7 /= 'b') = snd sq7
-    --Horizontals
-    | (snd sq1 == snd sq2 && snd sq2 == snd sq3 && snd sq3 /= 'b') = snd sq3
-    | (snd sq4 == snd sq5 && snd sq5 == snd sq6 && snd sq6 /= 'b') = snd sq6
-    | (snd sq7 == snd sq8 && snd sq8 == snd sq9 && snd sq9 /= 'b') = snd sq9
-    --Verticals
-    | (snd sq1 == snd sq4 && snd sq4 == snd sq7 && snd sq7 /= 'b') = snd sq7
-    | (snd sq2 == snd sq5 && snd sq5 == snd sq8 && snd sq8 /= 'b') = snd sq8
-    | (snd sq3 == snd sq6 && snd sq6 == snd sq9 && snd sq9 /= 'b') = snd sq9
-    | otherwise = 'b'
-isWin b = error $ "Cannot check if player won diagonaly: Invalid board " ++ show b
-
-isBoardFilled :: To -> Bool
-isBoardFilled ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : [])
-    | (snd sq1 /= 'b' && snd sq2 /= 'b' && snd sq3 /= 'b' && snd sq4 /= 'b' && snd sq5 /= 'b' &&
-       snd sq6 /= 'b' && snd sq7 /= 'b' && snd sq8 /= 'b' && snd sq9 /= 'b') = True
-    | otherwise = False
-isBoardFilled b = error $ "Cannot check if board is filled: Invalid board " ++ show b
-
 calcBlankSq :: To -> Int
-calcBlankSq ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : []) = 
-    let 
-        b1 = isSqBlank sq1
-        b2 = isSqBlank sq2
-        b3 = isSqBlank sq3
-        b4 = isSqBlank sq4
-        b5 = isSqBlank sq5
-        b6 = isSqBlank sq6
-        b7 = isSqBlank sq7
-        b8 = isSqBlank sq8
-        b9 = isSqBlank sq9
-    in 
-        b1 + b2 + b3 + b4 + b5 + b6 + b7 + b8 + b9
+calcBlankSq ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : []) = calcPlayerTurns allTurnsValue 'b' 0
+    where
+        allTurnsValue = [snd sq1, snd sq2, snd sq3, snd sq4, snd sq5, snd sq6, snd sq7, snd sq8, snd sq9]
 
 isSqBlank :: (Int, Char) -> Int
 isSqBlank sq
     | (snd sq == 'b') = 1
     | otherwise = 0
 
-whichSqBlank :: To -> Either String (Int, Int) 
+whichSqBlank :: To -> Maybe (Int, Int) 
 whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
-    | (snd sq1 == 'b') = Right (0, 0)
-    | (snd sq2 == 'b') = Right (0, 1)
-    | (snd sq3 == 'b') = Right (0, 2)
-    | (snd sq4 == 'b') = Right (1, 0)
-    | (snd sq5 == 'b') = Right (1, 1)
-    | (snd sq6 == 'b') = Right (1, 2)
-    | (snd sq7 == 'b') = Right (2, 0)
-    | (snd sq8 == 'b') = Right (2, 1)
-    | (snd sq9 == 'b') = Right (2, 2)
-    | otherwise = Left "no blank sq"
+    | (snd sq1 == 'b') = Just (0, 0)
+    | (snd sq2 == 'b') = Just (0, 1)
+    | (snd sq3 == 'b') = Just (0, 2)
+    | (snd sq4 == 'b') = Just (1, 0)
+    | (snd sq5 == 'b') = Just (1, 1)
+    | (snd sq6 == 'b') = Just (1, 2)
+    | (snd sq7 == 'b') = Just (2, 0)
+    | (snd sq8 == 'b') = Just (2, 1)
+    | (snd sq9 == 'b') = Just (2, 2)
+    | otherwise = Nothing
+
+
+
+
+printStatusMessage :: (To, String) -> IO ()
+printStatusMessage (board, msg) = putStr $ unlines $ [msg, getStrToDrawBoard board]
 
 getStrToDrawBoard :: To -> String
 getStrToDrawBoard board=
