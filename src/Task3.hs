@@ -531,3 +531,44 @@ takeNonB 'b' 'b' = error "Both b chars"
 takeNonB 'b' w = w
 takeNonB w 'b' = w
 takeNonB _ _ = error "Both non b chars"
+
+
+
+
+
+
+--------------------------------------------
+------------message Builder-----------------
+
+benMap :: [(String, String)] -> String
+benMap arr = benMap' arr []
+
+benMap' :: [(String, String)] -> String -> String
+benMap' [] acc = "d" ++ acc ++ "e"
+benMap' (h:t) acc = 
+    let
+        key = fst h
+        value = snd h
+        keyLen = show (length key)
+        newItem = keyLen ++ ":" ++ key ++ value
+    in
+        benMap' t (acc ++ newItem)
+
+benList :: [String] -> String
+benList arr = benList' arr []
+
+benList' :: [String] -> String -> String
+benList' [] acc = "l" ++ acc ++ "e"
+benList' (h:t) acc = benList' t (acc ++ h)
+
+benInt :: Int -> String
+benInt a = "i" ++ show a ++ "e"
+
+benString :: String -> String
+benString a = show (length a) ++ ":" ++ a
+
+-- crMessage = benMap[("last", (benList [benMap [("data", (benList [benInt 0, benInt 1,
+--  benString "X"]))]])), ("prev", (benMap [("last", (benList [benMap [("data",
+--  (benList [benInt 2, benInt 2, benString "O"]))]]))]))]
+
+--"d4:lastld4:datali0ei1e1:Xeee4:prevd4:lastld4:datali2ei2e1:Oeeeee"
