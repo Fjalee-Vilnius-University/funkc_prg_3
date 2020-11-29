@@ -540,11 +540,26 @@ takeNonB _ _ = error "Both non b chars"
 --------------------------------------------
 ------------message Builder-----------------
 
-tmsgb = 
+movesOrderTupleToBenStr :: String
+movesOrderTupleToBenStr = 
     let
-        
+        moves = fromXYVTuplesToXYVArrays t []
     in
-        fromXYVTuplesToXYVArrays t []
+        xyvArrayToBen moves
+
+xyvArrayToBen :: [(Int, Int, Char)] -> String
+xyvArrayToBen [] = ""
+xyvArrayToBen (h:t) = 
+    let
+        moveBenStr = xyvTupleToLMDL h
+        prevBody = xyvArrayToBen t 
+    in
+        case prevBody of
+        "" -> benMap[("last", moveBenStr)]
+        _ -> benMap[("prev", xyvArrayToBen t), ("last", moveBenStr)]
+
+xyvTupleToLMDL :: (Int, Int, Char) -> String
+xyvTupleToLMDL (x, y, v) = benList [benMap [("data", (benList [benInt x, benInt y, benString [v]]))]]
 
 fromXYVTuplesToXYVArrays :: ([Int], [Int], [Char]) -> [(Int, Int, Char)] -> [(Int, Int, Char)]
 fromXYVTuplesToXYVArrays ([], [], []) acc = acc
