@@ -502,8 +502,12 @@ t =
         newMove = findDif oldBoard newBoard
         newMessage = getNewMoveFormatted newMove
     in
-
---testWhatValueFindDifGets = convert 3 (either error id (parse ("d4:last" ++ t ++ "e")))
+        case getAllTurnsArr (either error id (parse message)) ([], [], []) of
+            Left a -> error  ("error received: Left " ++ show a)
+            Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
+        
+addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
+addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
 
 getNewMoveFormatted :: (Int, Int, Char) -> [Char]
 getNewMoveFormatted (x,y,v)= "ld4:datali" ++ show x ++ "e" ++ "i" ++ show y ++ "e" ++ "1:" ++ [v] ++ "eee"
