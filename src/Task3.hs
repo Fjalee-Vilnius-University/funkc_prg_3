@@ -22,10 +22,22 @@ getLilBoard = case convert 3 (either error id (parse message)) of
 
 parse :: String -> Either String JsonLikeValue
 parse str = 
-    case parseJLMap str str of
-        Left a -> Left a
-        Right (b, "") -> Right b
-        Right _ -> Left "Some values are outside of map"
+    if (isMessageMapEmpty str)
+    then Right (JLMap [])
+    else
+        case parseJLMap str str of
+            Left a -> Left a
+            Right (b, "") -> Right b
+            Right _ -> Left "Some values are outside of map"
+
+isMessageMapEmpty :: String -> Bool
+isMessageMapEmpty str = 
+    if (length str < 29)
+    then 
+        if (length str > 2)
+        then error $ "Invalid message received: " ++ str ++" message has to contain ether empty map \"de\" or valid values inside the map"
+        else True
+    else False
 
 parseJLMap :: String -> String -> Either String (JsonLikeValue, String)
 parseJLMap ('d':t) orgStr = 
@@ -41,10 +53,10 @@ lenDiff str1 str2 = (length str1) - (length str2)
 
 parseAllMapedJLValues :: String -> String -> Either String (JsonLikeValue, String)
 parseAllMapedJLValues ('e':t) _ = Right (JLMap [], t)
-parseAllMapedJLValues str orgStr =
+parseAllMapedJLValues str orgStr = 
     case parseMapedJLValue str orgStr of
         Left a -> Left a
-        Right ((key, value), rest) ->
+        Right ((key, value), rest) -> 
             case parseAllMapedJLValues rest orgStr of
                 Left a -> Left a
                 Right (JLMap acc, rest1) -> Right $ (JLMap ([(key, value)] ++ acc), rest1)
@@ -75,13 +87,14 @@ parseString str orgStr =
                 _ -> Left ("Error around character " ++ show errPos ++ " received string: " ++ str ++ " Invalid string")
 
 parseJLValue :: String -> String -> Either String (JsonLikeValue, String)
-parseJLValue ('d':t) orgStr =
+parseJLValue ('d':t) orgStr = 
     case parseJLMap('d':t) orgStr of
         Left a -> Left a
         Right (a, b) -> Right (a, b)
 parseJLValue ('l':t) orgStr = 
     case parseJLArray [] ('l':t) orgStr of
         Left a -> Left a
+        Right (a, "") -> error "gege"
         Right (a, b) -> Right (a, b)
 parseJLValue ('i':t) orgStr = 
     case parseJLInt ('i':t) orgStr of
@@ -223,6 +236,7 @@ getAllTurnsArr wholeMap allTurnsArr =
                         case delFromMap wholeMap ("last", lstLast) of
                             JLMap (h:_) -> getAllTurnsArr (snd h) allTurnsArr'
                             JLMap [] -> Right allTurnsArr'
+        Nothing -> Right ([], [], [])
 
 mapFind :: JsonLikeValue -> String -> Maybe JsonLikeValue 
 mapFind (JLMap []) _ = Nothing
@@ -336,6 +350,7 @@ findWinStep board =
         allPossMoves = genAllPossibleMoves board board []
         allPossScores = calcAllBoardsScore allPossMoves []
     in
+        --error $ show $ allPossMoves
         case findIndex (== (snd player)) allPossScores of
             Nothing -> Nothing
             Just i -> Just $ allPossMoves !! i
@@ -364,8 +379,7 @@ calcPlayerTurns (h:t) player acc
 
 calcAllBoardsScore :: [To] -> [Int] -> [Int]
 calcAllBoardsScore [] acc = acc
-calcAllBoardsScore (h:t) acc =
-    calcAllBoardsScore t (acc ++ [calcScore h])
+calcAllBoardsScore (h:t) acc = calcAllBoardsScore t (acc ++ [calcScore h])
 
 calcScore :: To -> Int
 calcScore board = 
