@@ -94,7 +94,6 @@ parseJLValue ('d':t) orgStr =
 parseJLValue ('l':t) orgStr = 
     case parseJLArray [] ('l':t) orgStr of
         Left a -> Left a
-        Right (a, "") -> error "gege"
         Right (a, b) -> Right (a, b)
 parseJLValue ('i':t) orgStr = 
     case parseJLInt ('i':t) orgStr of
@@ -350,7 +349,6 @@ findWinStep board =
         allPossMoves = genAllPossibleMoves board board []
         allPossScores = calcAllBoardsScore allPossMoves []
     in
-        --error $ show $ allPossMoves
         case findIndex (== (snd player)) allPossScores of
             Nothing -> Nothing
             Just i -> Just $ allPossMoves !! i
