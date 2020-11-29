@@ -495,6 +495,18 @@ ifBSpace ch
 
 -------------------------
 -------covert back-------
+t = 
+    let
+        oldBoard = populateBlankVals getLilBoard
+        newBoard = makeNextStep oldBoard
+        newMove = findDif oldBoard newBoard
+        newMessage = getNewMoveFormatted newMove
+    in
+
+--testWhatValueFindDifGets = convert 3 (either error id (parse ("d4:last" ++ t ++ "e")))
+
+getNewMoveFormatted :: (Int, Int, Char) -> [Char]
+getNewMoveFormatted (x,y,v)= "ld4:datali" ++ show x ++ "e" ++ "i" ++ show y ++ "e" ++ "1:" ++ [v] ++ "eee"
 
 findDif :: [[(Int, Char)]] -> [[(Int, Char)]] -> (Int, Int, Char)
 findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a : sq9a : [])  : [])
@@ -515,9 +527,3 @@ takeNonB 'b' 'b' = error "Both b chars"
 takeNonB 'b' w = w
 takeNonB w 'b' = w
 takeNonB _ _ = error "Both non b chars"
-
-t = 
-    let
-        a = ""
-    in
-        a
