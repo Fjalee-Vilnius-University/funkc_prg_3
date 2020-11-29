@@ -540,6 +540,20 @@ takeNonB _ _ = error "Both non b chars"
 --------------------------------------------
 ------------message Builder-----------------
 
+tmsgb = 
+    let
+        
+    in
+        fromXYVTuplesToXYVArrays t []
+
+fromXYVTuplesToXYVArrays :: ([Int], [Int], [Char]) -> [(Int, Int, Char)] -> [(Int, Int, Char)]
+fromXYVTuplesToXYVArrays ([], [], []) acc = acc
+fromXYVTuplesToXYVArrays ((hx:tx), (hy:ty), (hv:tv)) acc =
+    let
+        move = (hx, hy, hv)
+    in
+        fromXYVTuplesToXYVArrays (tx, ty, tv) (acc ++ [move])
+
 benMap :: [(String, String)] -> String
 benMap arr = benMap' arr []
 
