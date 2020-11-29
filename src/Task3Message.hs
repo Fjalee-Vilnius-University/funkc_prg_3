@@ -12,6 +12,7 @@ where
 message :: String
 --message = "de"
 message = "d4:lastld4:datali0ei1e1:Xeee4:prevd4:lastld4:datali2ei2e1:Oeeeee"
+            --"d4:lastld4:datali0ei1e1:Xeee4:prevd4:lastld4:datali2ei2e1:Oeeeee"
            --"d4:lastld4:datali0ei0e1:Xeeee"
 -- ┌       ┐
 -- │ X X X │

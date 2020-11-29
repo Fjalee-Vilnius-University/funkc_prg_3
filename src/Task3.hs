@@ -15,20 +15,18 @@ data JsonLikeValue = JLString String | JLInt Int | JLMap [(String, JsonLikeValue
 data InvalidState = Order | Duplicates deriving (Show, Eq)
 type To = [[(Int, Char)]]
 
-getLilBoard :: To
-getLilBoard = case convert 3 (either error id (parse message)) of
-    Right a -> a
-    Left a -> error $ "Ivalid state" ++ show a
+getLilBoard :: String -> To
+getLilBoard str = convert 3 (parse str)
 
-parse :: String -> Either String JsonLikeValue
+parse :: String -> JsonLikeValue
 parse str = 
     if (isMessageMapEmpty str)
-    then Right (JLMap [])
+    then JLMap []
     else
         case parseJLMap str str of
-            Left a -> Left a
-            Right (b, "") -> Right b
-            Right _ -> Left "Some values are outside of map"
+            Left a -> error $ show a
+            Right (b, "") -> b
+            Right _ -> error "Some values are outside of map"
 
 isMessageMapEmpty :: String -> Bool
 isMessageMapEmpty str = 
@@ -170,11 +168,14 @@ parseJLString str orgStr =
 
 -----------------------------------------------------------------
 
-convert :: Int -> JsonLikeValue -> Either InvalidState To
+convert :: Int -> JsonLikeValue -> To
 convert size wholeMap =
     case getAllTurnsArr wholeMap ([], [], []) of
-        Left a -> Left a
-        Right allTurnsArr -> parseArrToLIL allTurnsArr (createEmptyLILArr size [])
+        Left a -> error $ show a
+        Right allTurnsArr -> 
+            case parseArrToLIL allTurnsArr (createEmptyLILArr size []) of
+                Left a -> error $ show a
+                Right a -> a
         
 createEmptyLILArr :: Int -> [[(Int, Char)]] -> [[(Int, Char)]]
 createEmptyLILArr 0 arr = arr
@@ -291,10 +292,10 @@ delFromMap wholeMap itemDel =
 
 ---------------------------------------
 
-start :: IO ()
-start =
+start :: String -> IO ()
+start msg =
     let
-        board = populateBlankVals getLilBoard
+        board = populateBlankVals $ getLilBoard msg
     in
         if (isBoardFull board || (isWin board /= 'b'))
             then printStatusMessage $ (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
@@ -323,7 +324,7 @@ isWin ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  :
     | (snd sq2 == snd sq5 && snd sq5 == snd sq8 && snd sq8 /= 'b') = snd sq8
     | (snd sq3 == snd sq6 && snd sq6 == snd sq9 && snd sq9 /= 'b') = snd sq9
     | otherwise = 'b'
-isWin b = error $ "Cannot check if player won diagonaly: Invalid board " ++ show b
+isWin b = error $ "Cannot check if player won: Invalid board " ++ show b
 
 isBoardFull :: To -> Bool
 isBoardFull ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : [])
@@ -460,6 +461,9 @@ whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 :
 printStatusMessage :: (To, String) -> IO ()
 printStatusMessage (board, msg) = putStr $ unlines $ [msg, getStrToDrawBoard board]
 
+getStrToPrintStatusMsg :: (To, String) -> String
+getStrToPrintStatusMsg (board, msg) = unlines $ [msg, getStrToDrawBoard board]
+
 getStrToDrawBoard :: To -> String
 getStrToDrawBoard board=
     let
@@ -495,16 +499,20 @@ ifBSpace ch
 
 -------------------------
 -------covert back-------
-t = 
+addNewTurn :: String -> ([Int], [Int], [Char])
+addNewTurn msg = 
     let
-        oldBoard = populateBlankVals getLilBoard
+        oldBoard = populateBlankVals $ getLilBoard msg
         newBoard = makeNextStep oldBoard
         newMove = findDif oldBoard newBoard
         newMessage = getNewMoveFormatted newMove
     in
-        case getAllTurnsArr (either error id (parse message)) ([], [], []) of
-            Left a -> error  ("error received: Left " ++ show a)
-            Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
+        case newMove of
+        (0,2,'b') -> error $ show oldBoard ++ show newBoard
+        _ ->
+            case getAllTurnsArr (parse msg) ([], [], []) of
+                Left a -> error  ("error received: Left " ++ show a)
+                Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
         
 addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
 addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
@@ -516,14 +524,14 @@ findDif :: [[(Int, Char)]] -> [[(Int, Char)]] -> (Int, Int, Char)
 findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a : sq9a : [])  : [])
         ((sq1b : sq2b : sq3b : []) : (sq4b : sq5b : sq6b : [])  : (sq7b : sq8b : sq9b : [])  : []) 
     | (sq1a /= sq1b) = (0, 0, takeNonB (snd sq1a) (snd sq1b))
-    | (sq2a /= sq2b) = (1, 0, 'b')
-    | (sq3a /= sq3b) = (2, 0, 'b')
-    | (sq4a /= sq4b) = (0, 1, 'b')
-    | (sq5a /= sq5b) = (1, 1, 'b')
-    | (sq6a /= sq6b) = (2, 1, 'b')
-    | (sq7a /= sq7b) = (0, 2, 'b')
-    | (sq8a /= sq8b) = (1, 2, 'b')
-    | (sq9a /= sq9b) = (2, 2, 'b')
+    | (sq2a /= sq2b) = (1, 0, takeNonB (snd sq2a) (snd sq2b))
+    | (sq3a /= sq3b) = (2, 0, takeNonB (snd sq3a) (snd sq3b))
+    | (sq4a /= sq4b) = (0, 1, takeNonB (snd sq4a) (snd sq4b))
+    | (sq5a /= sq5b) = (1, 1, takeNonB (snd sq5a) (snd sq5b))
+    | (sq6a /= sq6b) = (2, 1, takeNonB (snd sq6a) (snd sq6b))
+    | (sq7a /= sq7b) = (0, 2, takeNonB (snd sq7a) (snd sq7b))
+    | (sq8a /= sq8b) = (1, 2, takeNonB (snd sq8a) (snd sq8b))
+    | (sq9a /= sq9b) = (2, 2, takeNonB (snd sq9a) (snd sq9b))
     | otherwise = error "Two boards are the same"
 
 takeNonB :: Char -> Char -> Char
@@ -536,14 +544,17 @@ takeNonB _ _ = error "Both non b chars"
 
 
 
+takeTurn :: String -> String
+takeTurn msg = movesToMessage $ addNewTurn msg
+
 
 --------------------------------------------
 ------------message Builder-----------------
 
-movesOrderTupleToBenStr :: String
-movesOrderTupleToBenStr = 
+movesToMessage :: ([Int], [Int], [Char]) -> String
+movesToMessage movesTuple = 
     let
-        moves = fromXYVTuplesToXYVArrays t []
+        moves = fromXYVTuplesToXYVArrays movesTuple []
     in
         xyvArrayToBen moves
 
@@ -595,6 +606,45 @@ benInt a = "i" ++ show a ++ "e"
 
 benString :: String -> String
 benString a = show (length a) ++ ":" ++ a
+
+playIOStr :: String -> String
+playIOStr msg =
+    let
+        board = populateBlankVals $ getLilBoard msg
+        newMessage = takeTurn msg
+    in
+        if (isBoardFull board || (isWin board /= 'b'))
+            then getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
+            else getStrToPrintStatusMsg (makeNextStep board, "Message is not implemented")
+
+
+playMsg :: String -> Either String String
+playMsg msg =
+    let
+        board = populateBlankVals $ getLilBoard msg
+        newMessage = takeTurn msg
+    in
+        if (isBoardFull board || (isWin board /= 'b'))
+            then Left msg
+            else Right newMessage
+
+
+playWYourself :: String -> [String] -> IO()
+playWYourself msg acc =
+    let
+        acc' = acc ++ [playIOStr msg]
+    in
+        case playMsg msg of
+        Left _ -> ioAllTurns acc'
+        Right newMsg -> playWYourself newMsg acc'
+
+
+ioAllTurns :: [String] -> IO()
+ioAllTurns arr = 
+    let
+        str = unlines arr
+    in
+        putStr str
 
 -- crMessage = benMap[("last", (benList [benMap [("data", (benList [benInt 0, benInt 1,
 --  benString "X"]))]])), ("prev", (benMap [("last", (benList [benMap [("data",
