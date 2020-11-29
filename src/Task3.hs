@@ -491,3 +491,33 @@ ifBSpace :: Char -> Char
 ifBSpace ch
     |(ch == 'b') = ' '
     | otherwise = ch
+
+
+-------------------------
+-------covert back-------
+
+findDif :: [[(Int, Char)]] -> [[(Int, Char)]] -> (Int, Int, Char)
+findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a : sq9a : [])  : [])
+        ((sq1b : sq2b : sq3b : []) : (sq4b : sq5b : sq6b : [])  : (sq7b : sq8b : sq9b : [])  : []) 
+    | (sq1a /= sq1b) = (0, 0, takeNonB (snd sq1a) (snd sq1b))
+    | (sq2a /= sq2b) = (1, 0, 'b')
+    | (sq3a /= sq3b) = (2, 0, 'b')
+    | (sq4a /= sq4b) = (0, 1, 'b')
+    | (sq5a /= sq5b) = (1, 1, 'b')
+    | (sq6a /= sq6b) = (2, 1, 'b')
+    | (sq7a /= sq7b) = (0, 2, 'b')
+    | (sq8a /= sq8b) = (1, 2, 'b')
+    | (sq9a /= sq9b) = (2, 2, 'b')
+    | otherwise = error "Two boards are the same"
+
+takeNonB :: Char -> Char -> Char
+takeNonB 'b' 'b' = error "Both b chars"
+takeNonB 'b' w = w
+takeNonB w 'b' = w
+takeNonB _ _ = error "Both non b chars"
+
+t = 
+    let
+        a = ""
+    in
+        a
