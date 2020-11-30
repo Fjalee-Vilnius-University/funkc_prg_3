@@ -419,11 +419,10 @@ xyvArrayToJson [] = ""
 xyvArrayToJson (h:t) = 
     let
         moveBenStr = xyvTupleToLMDL h
-        prevBody = xyvArrayToJson t 
     in
-        case prevBody of
+        case xyvArrayToJson t  of
         "" -> benMap[("last", moveBenStr)]
-        _ -> benMap[("prev", xyvArrayToJson t), ("last", moveBenStr)] 
+        a -> benMap[("prev", a), ("last", moveBenStr)] 
 
 xyvTupleToLMDL :: (Int, Int, Char) -> String
 xyvTupleToLMDL (x, y, v) = benList [benMap [("data", (benList [benInt x, benInt y, benString [v]]))]]
