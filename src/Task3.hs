@@ -7,9 +7,11 @@ import Task3Message
     ---executable parameters
 ---stdin
 ---stdout
-    ---halts
 ---exit code
 
+-------------------------------------------------------------------
+------------------------Parser from LW2----------------------------
+-------------------------------------------------------------------
 
 data JsonLikeValue = JLString String | JLInt Int | JLMap [(String, JsonLikeValue)] | JLArray [JsonLikeValue] deriving (Show, Eq)
 data InvalidState = Order | Duplicates deriving (Show, Eq)
@@ -166,7 +168,9 @@ parseJLString str orgStr =
                 _ -> Left ("Error around character " ++ show errPos ++ ", Invalid string")
             else Left ("Error around character " ++ show errPos ++ ", Length of the string was not declared")
 
------------------------------------------------------------------
+-------------------------------------------------------------------
+------------------------Converter from LW2----------------------------
+-------------------------------------------------------------------
 
 convert :: Int -> JsonLikeValue -> To
 convert size wholeMap =
@@ -289,8 +293,9 @@ delFromMap wholeMap itemDel =
         JLMap arrayOfTuples -> JLMap $ delete itemDel arrayOfTuples
 
 
-
----------------------------------------
+-------------------------------------------------------------------
+------------------------Parser from LW2----------------------------
+-------------------------------------------------------------------
 
 start :: String -> IO ()
 start msg =
@@ -497,59 +502,9 @@ ifBSpace ch
     | otherwise = ch
 
 
--------------------------
--------covert back-------
-addNewTurn :: String -> ([Int], [Int], [Char])
-addNewTurn msg = 
-    let
-        oldBoard = populateBlankVals $ getLilBoard msg
-        newBoard = makeNextStep oldBoard
-        newMove = findDif oldBoard newBoard
-        newMessage = getNewMoveFormatted newMove
-    in
-        case newMove of
-        (0,2,'b') -> error $ show oldBoard ++ show newBoard
-        _ ->
-            case getAllTurnsArr (parse msg) ([], [], []) of
-                Left a -> error  ("error received: Left " ++ show a)
-                Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
-        
-addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
-addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
-
-getNewMoveFormatted :: (Int, Int, Char) -> [Char]
-getNewMoveFormatted (x,y,v)= "ld4:datali" ++ show x ++ "e" ++ "i" ++ show y ++ "e" ++ "1:" ++ [v] ++ "eee"
-
-findDif :: [[(Int, Char)]] -> [[(Int, Char)]] -> (Int, Int, Char)
-findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a : sq9a : [])  : [])
-        ((sq1b : sq2b : sq3b : []) : (sq4b : sq5b : sq6b : [])  : (sq7b : sq8b : sq9b : [])  : []) 
-    | (sq1a /= sq1b) = (0, 0, takeNonB (snd sq1a) (snd sq1b))
-    | (sq2a /= sq2b) = (1, 0, takeNonB (snd sq2a) (snd sq2b))
-    | (sq3a /= sq3b) = (2, 0, takeNonB (snd sq3a) (snd sq3b))
-    | (sq4a /= sq4b) = (0, 1, takeNonB (snd sq4a) (snd sq4b))
-    | (sq5a /= sq5b) = (1, 1, takeNonB (snd sq5a) (snd sq5b))
-    | (sq6a /= sq6b) = (2, 1, takeNonB (snd sq6a) (snd sq6b))
-    | (sq7a /= sq7b) = (0, 2, takeNonB (snd sq7a) (snd sq7b))
-    | (sq8a /= sq8b) = (1, 2, takeNonB (snd sq8a) (snd sq8b))
-    | (sq9a /= sq9b) = (2, 2, takeNonB (snd sq9a) (snd sq9b))
-    | otherwise = error "Two boards are the same"
-
-takeNonB :: Char -> Char -> Char
-takeNonB 'b' 'b' = error "Both b chars"
-takeNonB 'b' w = w
-takeNonB w 'b' = w
-takeNonB _ _ = error "Both non b chars"
-
-
-
-
-
-takeTurn :: String -> String
-takeTurn msg = movesToMessage $ addNewTurn msg
-
-
---------------------------------------------
-------------message Builder-----------------
+-------------------------------------------------------------------
+--------------Convert board to message for another bot-------------
+-------------------------------------------------------------------
 
 movesToMessage :: ([Int], [Int], [Char]) -> String
 movesToMessage movesTuple = 
@@ -646,8 +601,49 @@ ioAllTurns arr =
     in
         putStr str
 
--- crMessage = benMap[("last", (benList [benMap [("data", (benList [benInt 0, benInt 1,
---  benString "X"]))]])), ("prev", (benMap [("last", (benList [benMap [("data",
---  (benList [benInt 2, benInt 2, benString "O"]))]]))]))]
 
---"d4:lastld4:datali0ei1e1:Xeee4:prevd4:lastld4:datali2ei2e1:Oeeeee"
+-------------------------
+-------covert back-------
+addNewTurn :: String -> ([Int], [Int], [Char])
+addNewTurn msg = 
+    let
+        oldBoard = populateBlankVals $ getLilBoard msg
+        newBoard = makeNextStep oldBoard
+        newMove = findDif oldBoard newBoard
+        newMessage = getNewMoveFormatted newMove
+    in
+        case newMove of
+        (0,2,'b') -> error $ show oldBoard ++ show newBoard
+        _ ->
+            case getAllTurnsArr (parse msg) ([], [], []) of
+                Left a -> error  ("error received: Left " ++ show a)
+                Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
+        
+addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
+addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
+
+getNewMoveFormatted :: (Int, Int, Char) -> [Char]
+getNewMoveFormatted (x,y,v)= "ld4:datali" ++ show x ++ "e" ++ "i" ++ show y ++ "e" ++ "1:" ++ [v] ++ "eee"
+
+findDif :: [[(Int, Char)]] -> [[(Int, Char)]] -> (Int, Int, Char)
+findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a : sq9a : [])  : [])
+        ((sq1b : sq2b : sq3b : []) : (sq4b : sq5b : sq6b : [])  : (sq7b : sq8b : sq9b : [])  : []) 
+    | (sq1a /= sq1b) = (0, 0, takeNonB (snd sq1a) (snd sq1b))
+    | (sq2a /= sq2b) = (1, 0, takeNonB (snd sq2a) (snd sq2b))
+    | (sq3a /= sq3b) = (2, 0, takeNonB (snd sq3a) (snd sq3b))
+    | (sq4a /= sq4b) = (0, 1, takeNonB (snd sq4a) (snd sq4b))
+    | (sq5a /= sq5b) = (1, 1, takeNonB (snd sq5a) (snd sq5b))
+    | (sq6a /= sq6b) = (2, 1, takeNonB (snd sq6a) (snd sq6b))
+    | (sq7a /= sq7b) = (0, 2, takeNonB (snd sq7a) (snd sq7b))
+    | (sq8a /= sq8b) = (1, 2, takeNonB (snd sq8a) (snd sq8b))
+    | (sq9a /= sq9b) = (2, 2, takeNonB (snd sq9a) (snd sq9b))
+    | otherwise = error "Two boards are the same"
+
+takeNonB :: Char -> Char -> Char
+takeNonB 'b' 'b' = error "Both b chars"
+takeNonB 'b' w = w
+takeNonB w 'b' = w
+takeNonB _ _ = error "Both non b chars"
+
+takeTurn :: String -> String
+takeTurn msg = movesToMessage $ addNewTurn msg
