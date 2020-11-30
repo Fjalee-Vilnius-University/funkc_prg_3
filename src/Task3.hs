@@ -300,7 +300,7 @@ start msg =
     in
         if (isBoardFull board || (isWin board /= 'b'))
             then printStatusMessage $ (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
-            else printStatusMessage $ (takeTurn board, "Message is not implemented")
+            else printStatusMessage $ (takeTurnRetLil board, "Message is not implemented")
 
 populateBlankVals :: To -> To
 populateBlankVals (row1 : row2 : row3 : []) 
@@ -311,28 +311,7 @@ populateBlankVals (row1 : row2 : row3 : [])
 populateDummyVals :: Show a1 => a1 -> a2
 populateDummyVals b = error $ "Cannot populate board with blank values: Invalid board " ++ show b
 
-isWin :: To -> Char
-isWin ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
-    --Diagonals
-    | (snd sq1 == snd sq5 && snd sq5 == snd sq9 && snd sq9 /= 'b') = snd sq9
-    | (snd sq3 == snd sq5 && snd sq5 == snd sq7 && snd sq7 /= 'b') = snd sq7
-    --Horizontals
-    | (snd sq1 == snd sq2 && snd sq2 == snd sq3 && snd sq3 /= 'b') = snd sq3
-    | (snd sq4 == snd sq5 && snd sq5 == snd sq6 && snd sq6 /= 'b') = snd sq6
-    | (snd sq7 == snd sq8 && snd sq8 == snd sq9 && snd sq9 /= 'b') = snd sq9
-    --Verticals
-    | (snd sq1 == snd sq4 && snd sq4 == snd sq7 && snd sq7 /= 'b') = snd sq7
-    | (snd sq2 == snd sq5 && snd sq5 == snd sq8 && snd sq8 /= 'b') = snd sq8
-    | (snd sq3 == snd sq6 && snd sq6 == snd sq9 && snd sq9 /= 'b') = snd sq9
-    | otherwise = 'b'
-isWin b = error $ "Cannot check if player won: Invalid board " ++ show b
 
-isBoardFull :: To -> Bool
-isBoardFull ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : [])
-    | (snd sq1 /= 'b' && snd sq2 /= 'b' && snd sq3 /= 'b' && snd sq4 /= 'b' && snd sq5 /= 'b' &&
-       snd sq6 /= 'b' && snd sq7 /= 'b' && snd sq8 /= 'b' && snd sq9 /= 'b') = True
-    | otherwise = False
-isBoardFull b = error $ "Cannot check if board is full: Invalid board " ++ show b
 
 
 addLowestBlank :: [(Int, Char)] -> Int -> [(Int, Char)]
@@ -367,35 +346,6 @@ whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 :
 printStatusMessage :: (To, String) -> IO ()
 printStatusMessage (board, msg) = putStr $ unlines $ [msg, getStrToDrawBoard board]
 
-getStrToPrintStatusMsg :: (To, String) -> String
-getStrToPrintStatusMsg (board, msg) = unlines $ [msg, getStrToDrawBoard board]
-
-getStrToDrawBoard :: To -> String
-getStrToDrawBoard board=
-    let
-        board' = replaceAllBWithSpace board
-        ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) = board'
-    in
-        unlines $ [[snd sq1] ++  " | " ++  [snd sq2] ++ " | " ++ [snd sq3] ,
-                   "---------",
-                   [snd sq4] ++  " | " ++  [snd sq5] ++ " | " ++ [snd sq6] ,
-                   "---------",
-                   [snd sq7] ++  " | " ++  [snd sq8] ++ " | " ++ [snd sq9]]
-
-replaceAllBWithSpace :: To -> To
-replaceAllBWithSpace ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) = 
-    let
-        sq1' = (fst sq1 ,ifBSpace $ snd sq1)
-        sq2' = (fst sq2 ,ifBSpace $ snd sq2)
-        sq3' = (fst sq3 ,ifBSpace $ snd sq3)
-        sq4' = (fst sq4 ,ifBSpace $ snd sq4)
-        sq5' = (fst sq5 ,ifBSpace $ snd sq5)
-        sq6' = (fst sq6 ,ifBSpace $ snd sq6)
-        sq7' = (fst sq7 ,ifBSpace $ snd sq7)
-        sq8' = (fst sq8 ,ifBSpace $ snd sq8)
-        sq9' = (fst sq9 ,ifBSpace $ snd sq9)
-    in
-        [[sq1', sq2', sq3'], [sq4', sq5', sq6'], [sq7', sq8', sq9']]
 
 ifBSpace :: Char -> Char
 ifBSpace ch
@@ -407,8 +357,8 @@ ifBSpace ch
 --------------Convert board to message for another bot-------------
 -------------------------------------------------------------------
 
-movesTupleToJsonMsg :: ([Int], [Int], [Char]) -> String
-movesTupleToJsonMsg mTuple = 
+convertBack :: ([Int], [Int], [Char]) -> String
+convertBack mTuple = 
     let
         moves = fromXYVTuplesToXYVArrays mTuple []
     in
@@ -421,11 +371,11 @@ xyvArrayToJson (h:t) =
         moveBenStr = xyvTupleToLMDL h
     in
         case xyvArrayToJson t  of
-        "" -> benMap[("last", moveBenStr)]
-        a -> benMap[("prev", a), ("last", moveBenStr)] 
+        "" -> jsonMap[("last", moveBenStr)]
+        a -> jsonMap[("prev", a), ("last", moveBenStr)] 
 
 xyvTupleToLMDL :: (Int, Int, Char) -> String
-xyvTupleToLMDL (x, y, v) = benList [benMap [("data", (benList [benInt x, benInt y, benString [v]]))]]
+xyvTupleToLMDL (x, y, v) = jsonList [jsonMap [("data", (jsonList [jsonInt x, jsonInt y, jsonString [v]]))]]
 
 fromXYVTuplesToXYVArrays :: ([Int], [Int], [Char]) -> [(Int, Int, Char)] -> [(Int, Int, Char)]
 fromXYVTuplesToXYVArrays ([], [], []) acc = acc
@@ -435,136 +385,57 @@ fromXYVTuplesToXYVArrays ((hx:tx), (hy:ty), (hv:tv)) acc =
     in
         fromXYVTuplesToXYVArrays (tx, ty, tv) (acc ++ [move])
 
-benMap :: [(String, String)] -> String
-benMap arr = benMap' arr []
+jsonMap :: [(String, String)] -> String
+jsonMap arr = jsonMap' arr []
 
-benMap' :: [(String, String)] -> String -> String
-benMap' [] acc = "d" ++ acc ++ "e"
-benMap' (h:t) acc = 
+jsonMap' :: [(String, String)] -> String -> String
+jsonMap' [] acc = "d" ++ acc ++ "e"
+jsonMap' (h:t) acc = 
     let
         key = fst h
         value = snd h
         keyLen = show (length key)
         newItem = keyLen ++ ":" ++ key ++ value
     in
-        benMap' t (acc ++ newItem)
+        jsonMap' t (acc ++ newItem)
 
-benList :: [String] -> String
-benList arr = benList' arr []
+jsonList :: [String] -> String
+jsonList arr = jsonList' arr []
 
-benList' :: [String] -> String -> String
-benList' [] acc = "l" ++ acc ++ "e"
-benList' (h:t) acc = benList' t (acc ++ h)
+jsonList' :: [String] -> String -> String
+jsonList' [] acc = "l" ++ acc ++ "e"
+jsonList' (h:t) acc = jsonList' t (acc ++ h)
 
-benInt :: Int -> String
-benInt a = "i" ++ show a ++ "e"
+jsonInt :: Int -> String
+jsonInt a = "i" ++ show a ++ "e"
 
-benString :: String -> String
-benString a = show (length a) ++ ":" ++ a
-
-playMsg :: String -> Either String String
-playMsg msg =
-    let
-        board = populateBlankVals $ parseToLilBoard msg
-        newMessage = takeTurnOld msg
-    in
-        if (isBoardFull board || (isWin board /= 'b'))
-            then Left msg
-            else Right newMessage
+jsonString :: String -> String
+jsonString a = show (length a) ++ ":" ++ a
 
 
+-------------------MAINS-----------------------
 
-ioAllTurns :: [String] -> IO()
-ioAllTurns arr = 
-    let
-        str = unlines arr
-    in
-        putStr str
-
-
--------------------------
--------covert back-------
-
-        
-addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
-addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
-
-getNewMoveFormatted :: (Int, Int, Char) -> [Char]
-getNewMoveFormatted (x,y,v)= "ld4:datali" ++ show x ++ "e" ++ "i" ++ show y ++ "e" ++ "1:" ++ [v] ++ "eee"
-
-findDif :: [[(Int, Char)]] -> [[(Int, Char)]] -> (Int, Int, Char)
-findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a : sq9a : [])  : [])
-        ((sq1b : sq2b : sq3b : []) : (sq4b : sq5b : sq6b : [])  : (sq7b : sq8b : sq9b : [])  : []) 
-    | (sq1a /= sq1b) = (0, 0, takeNonB (snd sq1a) (snd sq1b))
-    | (sq2a /= sq2b) = (1, 0, takeNonB (snd sq2a) (snd sq2b))
-    | (sq3a /= sq3b) = (2, 0, takeNonB (snd sq3a) (snd sq3b))
-    | (sq4a /= sq4b) = (0, 1, takeNonB (snd sq4a) (snd sq4b))
-    | (sq5a /= sq5b) = (1, 1, takeNonB (snd sq5a) (snd sq5b))
-    | (sq6a /= sq6b) = (2, 1, takeNonB (snd sq6a) (snd sq6b))
-    | (sq7a /= sq7b) = (0, 2, takeNonB (snd sq7a) (snd sq7b))
-    | (sq8a /= sq8b) = (1, 2, takeNonB (snd sq8a) (snd sq8b))
-    | (sq9a /= sq9b) = (2, 2, takeNonB (snd sq9a) (snd sq9b))
-    | otherwise = error "Two boards are the same"
-
-takeNonB :: Char -> Char -> Char
-takeNonB 'b' 'b' = error "Both b chars"
-takeNonB 'b' w = w
-takeNonB w 'b' = w
-takeNonB _ _ = error "Both non b chars"
-
-
-
-playWYourself :: String -> [String] -> IO()
-playWYourself msg acc =
-    let
-        acc' = acc ++ [playIOStr msg]
-    in
-        case playMsg msg of
-        Left _ -> ioAllTurns acc'
-        Right newMsg -> playWYourself newMsg acc'
 
 main :: IO()
 main = do
     putStrLn "Waiting for opponent's turn"
     jsonMsg <- getLine
+    putStrLn $ takeTurnRetJsonMessage jsonMsg
 
-    putStrLn $ "got it  ||||" ++ jsonMsg
+
     
 myMain jsonMsg = 
     let
         board = populateBlankVals $ parseToLilBoard jsonMsg
-        boardAfterMyTurn = takeTurn board 
 
+        msgForStatus = if (isBoardFull board || (isWin board /= 'b'))
+        then getStrToPrintStatusMsg (board ,"I cannot perform any moves because game is already ended (board is full or there is a winner)")
+        else getStrToPrintStatusMsg (takeTurnRetLil board ,"")
+
+        
     in
-        show boardAfterMyTurn
+        ""
 
-playIOStr :: String -> String
-playIOStr msg =
-    let
-        board = populateBlankVals $ parseToLilBoard msg
-        newMessage = takeTurnOld msg
-    in
-        if (isBoardFull board || (isWin board /= 'b'))
-            then getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
-            else getStrToPrintStatusMsg (takeTurn board, "Message is not implemented")
-
-
-
-addNewTurn :: String -> ([Int], [Int], [Char])
-addNewTurn msg = 
-    let
-        oldBoard = populateBlankVals $ parseToLilBoard msg
-        -------
-        newBoard = takeTurn oldBoard
-        newMove = findDif oldBoard newBoard
-        newMessage = getNewMoveFormatted newMove
-    in
-        case newMove of
-        (0,2,'b') -> error $ show oldBoard ++ show newBoard
-        _ ->
-            case getAllTurnsArr (parse msg) ([], [], []) of
-                Left a -> error  ("error received: Left " ++ show a)
-                Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
 
 
 ------------------------------------------------------------
@@ -576,8 +447,8 @@ parseToLilBoard str = convert 3 (parse str)
 
 ---------
 
-takeTurn :: To -> To
-takeTurn board =
+takeTurnRetLil :: To -> To
+takeTurnRetLil board =
     case findWinStep board of
         Just b -> b
         Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
@@ -648,26 +519,40 @@ isBoardDoomed board =
 
 ---------
        
-takeTurnOld :: String -> String
-takeTurnOld msg = movesTupleToJsonMsg $ addNewTurn msg
+takeTurnRetJsonMessage :: String -> String
+takeTurnRetJsonMessage msg = convertBack $ takeTurnRetTurnOrder msg
 
+    
+takeTurnRetTurnOrder :: String -> ([Int], [Int], [Char])
+takeTurnRetTurnOrder msg = 
+    let
+        oldBoard = populateBlankVals $ parseToLilBoard msg
+        newBoard = takeTurnRetLil oldBoard
+        newMove = findDif oldBoard newBoard
+    in
+        case getAllTurnsArr (parse msg) ([], [], []) of
+            Left a -> error  ("error received: Left " ++ show a)
+            Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
 
+----------
 
+getStrToPrintStatusMsg :: (To, String) -> String
+getStrToPrintStatusMsg (board, msg) = unlines $ [msg, getStrToDrawBoard board]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+getStrToDrawBoard :: To -> String
+getStrToDrawBoard board =
+    let
+        board' = replaceAllBWithSpace board
+        ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) = board'
+    in
+        unlines $ [[snd sq1] ++  " | " ++  [snd sq2] ++ " | " ++ [snd sq3] ,
+                   "---------",
+                   [snd sq4] ++  " | " ++  [snd sq5] ++ " | " ++ [snd sq6] ,
+                   "---------",
+                   [snd sq7] ++  " | " ++  [snd sq8] ++ " | " ++ [snd sq9], ""]
+        
+addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
+addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
 ----------------------------------------------
 --------Simply understandable functions-------
 ----------------------------------------------
@@ -692,4 +577,98 @@ calcPlayerTurns (h:t) player acc
 replace :: a -> Int -> [a] -> [a]
 replace newEl 0 arr = newEl : (tail arr)
 replace newEl i (a:arr) = (a : replace newEl (i-1) arr)
+
+isBoardFull :: To -> Bool
+isBoardFull ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : [])
+    | (snd sq1 /= 'b' && snd sq2 /= 'b' && snd sq3 /= 'b' && snd sq4 /= 'b' && snd sq5 /= 'b' &&
+       snd sq6 /= 'b' && snd sq7 /= 'b' && snd sq8 /= 'b' && snd sq9 /= 'b') = True
+    | otherwise = False
+isBoardFull b = error $ "Cannot check if board is full: Invalid board " ++ show b
+    
+isWin :: To -> Char
+isWin ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
+    --Diagonals
+    | (snd sq1 == snd sq5 && snd sq5 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    | (snd sq3 == snd sq5 && snd sq5 == snd sq7 && snd sq7 /= 'b') = snd sq7
+    --Horizontals
+    | (snd sq1 == snd sq2 && snd sq2 == snd sq3 && snd sq3 /= 'b') = snd sq3
+    | (snd sq4 == snd sq5 && snd sq5 == snd sq6 && snd sq6 /= 'b') = snd sq6
+    | (snd sq7 == snd sq8 && snd sq8 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    --Verticals
+    | (snd sq1 == snd sq4 && snd sq4 == snd sq7 && snd sq7 /= 'b') = snd sq7
+    | (snd sq2 == snd sq5 && snd sq5 == snd sq8 && snd sq8 /= 'b') = snd sq8
+    | (snd sq3 == snd sq6 && snd sq6 == snd sq9 && snd sq9 /= 'b') = snd sq9
+    | otherwise = 'b'
+isWin b = error $ "Cannot check if player won: Invalid board " ++ show b
+
+replaceAllBWithSpace :: To -> To
+replaceAllBWithSpace ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) = 
+    let
+        sq1' = (fst sq1 ,ifBSpace $ snd sq1)
+        sq2' = (fst sq2 ,ifBSpace $ snd sq2)
+        sq3' = (fst sq3 ,ifBSpace $ snd sq3)
+        sq4' = (fst sq4 ,ifBSpace $ snd sq4)
+        sq5' = (fst sq5 ,ifBSpace $ snd sq5)
+        sq6' = (fst sq6 ,ifBSpace $ snd sq6)
+        sq7' = (fst sq7 ,ifBSpace $ snd sq7)
+        sq8' = (fst sq8 ,ifBSpace $ snd sq8)
+        sq9' = (fst sq9 ,ifBSpace $ snd sq9)
+    in
+        [[sq1', sq2', sq3'], [sq4', sq5', sq6'], [sq7', sq8', sq9']]
+
+takeNonB :: Char -> Char -> Char
+takeNonB 'b' 'b' = error "Both b chars"
+takeNonB 'b' w = w
+takeNonB w 'b' = w
+takeNonB _ _ = error "Both non b chars"
+
+findDif :: [[(Int, Char)]] -> [[(Int, Char)]] -> (Int, Int, Char)
+findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a : sq9a : [])  : [])
+        ((sq1b : sq2b : sq3b : []) : (sq4b : sq5b : sq6b : [])  : (sq7b : sq8b : sq9b : [])  : []) 
+    | (sq1a /= sq1b) = (0, 0, takeNonB (snd sq1a) (snd sq1b))
+    | (sq2a /= sq2b) = (1, 0, takeNonB (snd sq2a) (snd sq2b))
+    | (sq3a /= sq3b) = (2, 0, takeNonB (snd sq3a) (snd sq3b))
+    | (sq4a /= sq4b) = (0, 1, takeNonB (snd sq4a) (snd sq4b))
+    | (sq5a /= sq5b) = (1, 1, takeNonB (snd sq5a) (snd sq5b))
+    | (sq6a /= sq6b) = (2, 1, takeNonB (snd sq6a) (snd sq6b))
+    | (sq7a /= sq7b) = (0, 2, takeNonB (snd sq7a) (snd sq7b))
+    | (sq8a /= sq8b) = (1, 2, takeNonB (snd sq8a) (snd sq8b))
+    | (sq9a /= sq9b) = (2, 2, takeNonB (snd sq9a) (snd sq9b))
+    | otherwise = error "Two boards are the same"
+
+
+
+----------------------USELESSS------------------
+-- ioAllTurns :: [String] -> IO()
+-- ioAllTurns arr = 
+--     let
+--         str = unlines arr
+--     in
+--         putStr str
+
+-- playWYourself :: String -> [String] -> IO()
+-- playWYourself msg acc =
+--     let
+--         acc' = acc ++ [getStrToPutStatusMsg msg]
+--     in
+--         case playMsg msg of
+    --         Left _ -> ioAllTurns acc'
+    --         Right newMsg -> playWYourself newMsg acc'
+
+
+-- playMsg :: String -> Either String String
+-- playMsg msg =
+--     let
+--         board = populateBlankVals $ parseToLilBoard msg
+--         newMessage = takeTurnRetJsonMessage msg
+--     in
+--         if (isBoardFull board || (isWin board /= 'b'))
+--             then Left msg
+--             else Right newMessage
+
+
+-- getStrToPutStatusMsg :: To -> String
+-- getStrToPutStatusMsg board 
+--     | (isBoardFull board || (isWin board /= 'b')) = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
+--     | otherwise = getStrToPrintStatusMsg (takeTurnRetLil board, "")
 
