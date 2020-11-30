@@ -9,6 +9,7 @@ import Task3Message
 ---stdout
 ---exit code
 
+
 -------------------------------------------------------------------
 ------------------------Parser from LW2----------------------------
 -------------------------------------------------------------------
@@ -17,8 +18,6 @@ data JsonLikeValue = JLString String | JLInt Int | JLMap [(String, JsonLikeValue
 data InvalidState = Order | Duplicates deriving (Show, Eq)
 type To = [[(Int, Char)]]
 
-getLilBoard :: String -> To
-getLilBoard str = convert 3 (parse str)
 
 parse :: String -> JsonLikeValue
 parse str = 
@@ -169,7 +168,7 @@ parseJLString str orgStr =
             else Left ("Error around character " ++ show errPos ++ ", Length of the string was not declared")
 
 -------------------------------------------------------------------
-------------------------Converter from LW2----------------------------
+-----------------------Converter from LW2--------------------------
 -------------------------------------------------------------------
 
 convert :: Int -> JsonLikeValue -> To
@@ -196,9 +195,6 @@ parseArrToLIL (xsArr, ysArr, vsArr) lilArr =
             Left a -> Left a
             Right a -> parseArrToLIL (tail xsArr, tail ysArr, tail vsArr) (replace a (head ysArr) lilArr)
 
-replace :: a -> Int -> [a] -> [a]
-replace newEl 0 arr = newEl: (tail arr)
-replace newEl i (a:arr) = (a : replace newEl (i-1) arr)
 
 addMoveToArr :: [(Int, Char)] -> (Int, Char) -> Either InvalidState [(Int, Char)]
 addMoveToArr allMovesArr (x, v) = 
@@ -294,17 +290,17 @@ delFromMap wholeMap itemDel =
 
 
 -------------------------------------------------------------------
-------------------------Parser from LW2----------------------------
+------------------------           ----------------------------
 -------------------------------------------------------------------
 
 start :: String -> IO ()
 start msg =
     let
-        board = populateBlankVals $ getLilBoard msg
+        board = populateBlankVals $ parseToLilBoard msg
     in
         if (isBoardFull board || (isWin board /= 'b'))
             then printStatusMessage $ (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
-            else printStatusMessage $ (makeNextStep board, "Message is not implemented")
+            else printStatusMessage $ (takeTurn board, "Message is not implemented")
 
 populateBlankVals :: To -> To
 populateBlankVals (row1 : row2 : row3 : []) 
@@ -339,98 +335,6 @@ isBoardFull ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : 
 isBoardFull b = error $ "Cannot check if board is full: Invalid board " ++ show b
 
 
-
-makeNextStep :: To -> To
-makeNextStep board =
-    case findWinStep board of
-        Just b -> b
-        Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
-
-findWinStep :: To -> Maybe To
-findWinStep board = 
-    let
-        player
-            | isXTurn board = ('X', 10)
-            | otherwise = ('O', -10)
-        allPossMoves = genAllPossibleMoves board board []
-        allPossScores = calcAllBoardsScore allPossMoves []
-    in
-        case findIndex (== (snd player)) allPossScores of
-            Nothing -> Nothing
-            Just i -> Just $ allPossMoves !! i
-
-findNonDoomedBoard :: [To] -> To
-findNonDoomedBoard [] = error "The board is doomed for me to lose, there is no possible move that would save me, lord Aurelion Sol forgive me for have a sined and save me from the Yasuo's torture"
-findNonDoomedBoard (board:remBoards) =
-    case isBoardDoomed board of
-        False -> board
-        True -> findNonDoomedBoard remBoards
-
-
-
-
-isBoardDoomed :: To -> Bool
-isBoardDoomed board = 
-    case findWinStep board of
-        Nothing -> False
-        Just _ -> True
-
-calcPlayerTurns :: [Char] -> Char -> Int -> Int
-calcPlayerTurns [] _ acc = acc
-calcPlayerTurns (h:t) player acc
-    | h == player = calcPlayerTurns t player (acc + 1)
-    | otherwise = calcPlayerTurns t player acc
-
-calcAllBoardsScore :: [To] -> [Int] -> [Int]
-calcAllBoardsScore [] acc = acc
-calcAllBoardsScore (h:t) acc = calcAllBoardsScore t (acc ++ [calcScore h])
-
-calcScore :: To -> Int
-calcScore board = 
-    let
-        board' = populateBlankVals board
-    in
-        case isWin board' of
-            'X' -> 10
-            'O' -> -10
-            'b' 
-               | (isBoardFull board') -> 0
-               | otherwise -> 50
-
-genAllPossibleMoves :: To -> To -> [To] -> [To]
-genAllPossibleMoves board genBoard acc = 
-    case genPossibleMove board genBoard of
-            Left _ -> acc
-            Right (newMove, newGenBoard) -> genAllPossibleMoves board newGenBoard (acc ++ [newMove])
-
-genPossibleMove :: To -> To -> Either String (To, To)
-genPossibleMove orgBoard board = 
-    case whichSqBlank board of
-        Nothing -> Left "No more possible moves"
-        Just (row, col) -> 
-            let 
-                player
-                    | isXTurn orgBoard = 'X'
-                    | otherwise = 'O'
-                newRowForMove = replace (col, player) col (orgBoard !! row)
-                newMove = replace newRowForMove row orgBoard
-                newRowForBoard = replace (col, player) col (board !! row)
-                newBoard = replace newRowForBoard row board
-            in
-                Right (newMove, newBoard)
-
-isXTurn :: To -> Bool
-isXTurn ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) =
-    let
-        allTurnsValue = [snd sq1, snd sq2, snd sq3, snd sq4, snd sq5, snd sq6, snd sq7, snd sq8, snd sq9]
-        xNmTurns = calcPlayerTurns allTurnsValue 'X' 0
-        oNmTurns = calcPlayerTurns allTurnsValue 'O' 0
-    in
-        if (oNmTurns < xNmTurns)
-        then False
-        else True
-isXTurn a = error $ "Cant check if X turn: Invalid board" ++ show a
-
 addLowestBlank :: [(Int, Char)] -> Int -> [(Int, Char)]
 addLowestBlank row acc  
     | (length row < acc+1) = insertAt (acc, 'b') acc row
@@ -459,9 +363,6 @@ whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 :
     | (snd sq8 == 'b') = Just (2, 1)
     | (snd sq9 == 'b') = Just (2, 2)
     | otherwise = Nothing
-
-
-
 
 printStatusMessage :: (To, String) -> IO ()
 printStatusMessage (board, msg) = putStr $ unlines $ [msg, getStrToDrawBoard board]
@@ -506,23 +407,23 @@ ifBSpace ch
 --------------Convert board to message for another bot-------------
 -------------------------------------------------------------------
 
-movesToMessage :: ([Int], [Int], [Char]) -> String
-movesToMessage movesTuple = 
+movesTupleToJsonMsg :: ([Int], [Int], [Char]) -> String
+movesTupleToJsonMsg mTuple = 
     let
-        moves = fromXYVTuplesToXYVArrays movesTuple []
+        moves = fromXYVTuplesToXYVArrays mTuple []
     in
-        xyvArrayToBen moves
+        xyvArrayToJson moves
 
-xyvArrayToBen :: [(Int, Int, Char)] -> String
-xyvArrayToBen [] = ""
-xyvArrayToBen (h:t) = 
+xyvArrayToJson :: [(Int, Int, Char)] -> String
+xyvArrayToJson [] = ""
+xyvArrayToJson (h:t) = 
     let
         moveBenStr = xyvTupleToLMDL h
-        prevBody = xyvArrayToBen t 
+        prevBody = xyvArrayToJson t 
     in
         case prevBody of
         "" -> benMap[("last", moveBenStr)]
-        _ -> benMap[("prev", xyvArrayToBen t), ("last", moveBenStr)]
+        _ -> benMap[("prev", xyvArrayToJson t), ("last", moveBenStr)] 
 
 xyvTupleToLMDL :: (Int, Int, Char) -> String
 xyvTupleToLMDL (x, y, v) = benList [benMap [("data", (benList [benInt x, benInt y, benString [v]]))]]
@@ -562,36 +463,16 @@ benInt a = "i" ++ show a ++ "e"
 benString :: String -> String
 benString a = show (length a) ++ ":" ++ a
 
-playIOStr :: String -> String
-playIOStr msg =
-    let
-        board = populateBlankVals $ getLilBoard msg
-        newMessage = takeTurn msg
-    in
-        if (isBoardFull board || (isWin board /= 'b'))
-            then getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
-            else getStrToPrintStatusMsg (makeNextStep board, "Message is not implemented")
-
-
 playMsg :: String -> Either String String
 playMsg msg =
     let
-        board = populateBlankVals $ getLilBoard msg
-        newMessage = takeTurn msg
+        board = populateBlankVals $ parseToLilBoard msg
+        newMessage = takeTurnOld msg
     in
         if (isBoardFull board || (isWin board /= 'b'))
             then Left msg
             else Right newMessage
 
-
-playWYourself :: String -> [String] -> IO()
-playWYourself msg acc =
-    let
-        acc' = acc ++ [playIOStr msg]
-    in
-        case playMsg msg of
-        Left _ -> ioAllTurns acc'
-        Right newMsg -> playWYourself newMsg acc'
 
 
 ioAllTurns :: [String] -> IO()
@@ -604,20 +485,7 @@ ioAllTurns arr =
 
 -------------------------
 -------covert back-------
-addNewTurn :: String -> ([Int], [Int], [Char])
-addNewTurn msg = 
-    let
-        oldBoard = populateBlankVals $ getLilBoard msg
-        newBoard = makeNextStep oldBoard
-        newMove = findDif oldBoard newBoard
-        newMessage = getNewMoveFormatted newMove
-    in
-        case newMove of
-        (0,2,'b') -> error $ show oldBoard ++ show newBoard
-        _ ->
-            case getAllTurnsArr (parse msg) ([], [], []) of
-                Left a -> error  ("error received: Left " ++ show a)
-                Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
+
         
 addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
 addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
@@ -645,5 +513,184 @@ takeNonB 'b' w = w
 takeNonB w 'b' = w
 takeNonB _ _ = error "Both non b chars"
 
-takeTurn :: String -> String
-takeTurn msg = movesToMessage $ addNewTurn msg
+
+
+playWYourself :: String -> [String] -> IO()
+playWYourself msg acc =
+    let
+        acc' = acc ++ [playIOStr msg]
+    in
+        case playMsg msg of
+        Left _ -> ioAllTurns acc'
+        Right newMsg -> playWYourself newMsg acc'
+
+main :: IO()
+main = do
+    putStrLn "Waiting for opponent's turn"
+    jsonMsg <- getLine
+
+    putStrLn $ "got it  ||||" ++ jsonMsg
+    
+myMain jsonMsg = 
+    let
+        board = populateBlankVals $ parseToLilBoard jsonMsg
+        boardAfterMyTurn = takeTurn board 
+
+    in
+        show boardAfterMyTurn
+
+playIOStr :: String -> String
+playIOStr msg =
+    let
+        board = populateBlankVals $ parseToLilBoard msg
+        newMessage = takeTurnOld msg
+    in
+        if (isBoardFull board || (isWin board /= 'b'))
+            then getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
+            else getStrToPrintStatusMsg (takeTurn board, "Message is not implemented")
+
+
+
+addNewTurn :: String -> ([Int], [Int], [Char])
+addNewTurn msg = 
+    let
+        oldBoard = populateBlankVals $ parseToLilBoard msg
+        -------
+        newBoard = takeTurn oldBoard
+        newMove = findDif oldBoard newBoard
+        newMessage = getNewMoveFormatted newMove
+    in
+        case newMove of
+        (0,2,'b') -> error $ show oldBoard ++ show newBoard
+        _ ->
+            case getAllTurnsArr (parse msg) ([], [], []) of
+                Left a -> error  ("error received: Left " ++ show a)
+                Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
+
+
+------------------------------------------------------------
+------------------------For myMain--------------------------
+------------------------------------------------------------
+
+parseToLilBoard :: String -> To
+parseToLilBoard str = convert 3 (parse str)
+
+---------
+
+takeTurn :: To -> To
+takeTurn board =
+    case findWinStep board of
+        Just b -> b
+        Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
+        
+findWinStep :: To -> Maybe To
+findWinStep board = 
+    let
+        player
+            | isXTurn board = ('X', 10)
+            | otherwise = ('O', -10)
+        allPossMoves = genAllPossibleMoves board board []
+        allPossScores = calcAllBoardsScore allPossMoves []
+    in
+        case findIndex (== (snd player)) allPossScores of
+            Nothing -> Nothing
+            Just i -> Just $ allPossMoves !! i
+
+genAllPossibleMoves :: To -> To -> [To] -> [To]
+genAllPossibleMoves board genBoard acc = 
+    case genPossibleMove board genBoard of
+            Left _ -> acc
+            Right (newMove, newGenBoard) -> genAllPossibleMoves board newGenBoard (acc ++ [newMove])
+
+genPossibleMove :: To -> To -> Either String (To, To)
+genPossibleMove orgBoard board = 
+    case whichSqBlank board of
+        Nothing -> Left "No more possible moves"
+        Just (row, col) -> 
+            let 
+                player
+                    | isXTurn orgBoard = 'X'
+                    | otherwise = 'O'
+                newRowAfterMove = replace (col, player) col (orgBoard !! row)
+                newBoardAfterMove = replace newRowAfterMove row orgBoard
+                newRowForBoard = replace (col, player) col (board !! row)
+                newBoard = replace newRowForBoard row board
+            in
+                Right (newBoardAfterMove, newBoard)
+
+calcAllBoardsScore :: [To] -> [Int] -> [Int]
+calcAllBoardsScore [] acc = acc
+calcAllBoardsScore (h:t) acc = calcAllBoardsScore t (acc ++ [calcScore h])
+
+calcScore :: To -> Int
+calcScore board = 
+    let
+        board' = populateBlankVals board
+    in
+        case isWin board' of
+            'X' -> 10
+            'O' -> -10
+            'b' 
+               | (isBoardFull board') -> 0
+               | otherwise -> 50
+
+findNonDoomedBoard :: [To] -> To
+findNonDoomedBoard [] = error "I Lost ayayaya"
+findNonDoomedBoard (board:remBoards) =
+    case isBoardDoomed board of
+        False -> board
+        True -> findNonDoomedBoard remBoards
+
+isBoardDoomed :: To -> Bool
+isBoardDoomed board = 
+    case findWinStep board of
+        Nothing -> False
+        Just _ -> True
+
+---------
+       
+takeTurnOld :: String -> String
+takeTurnOld msg = movesTupleToJsonMsg $ addNewTurn msg
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------
+--------Simply understandable functions-------
+----------------------------------------------
+isXTurn :: To -> Bool
+isXTurn ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) =
+    let
+        allTurnsValues = [snd sq1, snd sq2, snd sq3, snd sq4, snd sq5, snd sq6, snd sq7, snd sq8, snd sq9]
+        xNmTurns = calcPlayerTurns allTurnsValues 'X' 0
+        oNmTurns = calcPlayerTurns allTurnsValues 'O' 0
+    in
+        if (oNmTurns < xNmTurns)
+        then False
+        else True
+isXTurn a = error $ "Cant check if X turn: Invalid board" ++ show a
+
+calcPlayerTurns :: [Char] -> Char -> Int -> Int
+calcPlayerTurns [] _ acc = acc
+calcPlayerTurns (h:t) player acc
+    | h == player = calcPlayerTurns t player (acc + 1)
+    | otherwise = calcPlayerTurns t player acc
+    
+replace :: a -> Int -> [a] -> [a]
+replace newEl 0 arr = newEl : (tail arr)
+replace newEl i (a:arr) = (a : replace newEl (i-1) arr)
+
