@@ -1,13 +1,14 @@
 module Task3 where
 import Data.List as L
 import Data.Char as C
-import Task3Message
+import System.Environment
 
 ---haskel executable
     ---executable parameters
 ---stdin
 ---stdout
 ---exit code
+
 
 
 -------------------------------------------------------------------
@@ -415,11 +416,21 @@ jsonString a = show (length a) ++ ":" ++ a
 
 -------------------MAINS-----------------------
 
+-- 0 All good, we are in the middle of a g
+-- 10 I just performed the last move, I won
+-- 12 I just performed the last move, a draw
+-- 20 I cannot perform any moves because game is already ended (board is full or there is a winner)
+-- 100 Incoming message is malformed (bad syntax)
+-- 101 Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)
+
 
 main :: IO()
 main = do
+    iAmX <- getArgs --fix
     putStrLn "Waiting for opponent's turn"
     jsonMsg <- getLine
+    --stderr
+    --exit code
     putStrLn $ takeTurnRetJsonMessage jsonMsg
 
 
@@ -553,6 +564,7 @@ getStrToDrawBoard board =
         
 addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
 addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
+
 ----------------------------------------------
 --------Simply understandable functions-------
 ----------------------------------------------
