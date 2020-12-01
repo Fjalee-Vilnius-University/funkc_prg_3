@@ -495,34 +495,41 @@ getOutput jsonMsg =
                             (myStdOut, myErrOut, myExitCode)
 
 main :: IO()
-main = do
-    args <- getArgs
-    case head args of
-        "X" -> do
-            msg <- getLine
-            let 
-                (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
-                case myExitCode of
-                    100 -> do exitWith $ ExitFailure myExitCode
-                    101 -> do exitWith $ ExitFailure myExitCode
-                    _ -> do
-                        putStrLn $ show args
-                        putStrLn myStdOut
-                        hPutStrLn stderr myErrOut
-                        exitWith $ ExitFailure myExitCode
-        "O" -> do
-            msg0 <- getLine
-            msg <- getLine
-            let
-                (myStdOut, myErrOut, myExitCode) = getOutput msg in 
-                case myExitCode of
-                    100 -> do exitWith $ ExitFailure myExitCode
-                    101 -> do exitWith $ ExitFailure myExitCode
-                    _ -> do
-                        putStrLn $ show args
-                        putStrLn myStdOut
-                        hPutStrLn stderr myErrOut
-                        exitWith $ ExitFailure myExitCode
+main = --do
+    --args <- getArgs
+    let 
+        args = ["X"] 
+    in
+        case head args of
+            "X" -> do
+                msg <- getLine
+                let 
+                    (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
+                    case myExitCode of
+                        100 -> do exitWith $ ExitFailure myExitCode
+                        101 -> do exitWith $ ExitFailure myExitCode
+                        _ -> do
+                            putStrLn myStdOut
+                            hPutStrLn stderr myErrOut
+                            case myExitCode of
+                                0 -> exitWith ExitSuccess
+                                _ -> exitWith $ ExitFailure myExitCode
+            "O" -> do
+                msg <- getLine
+                let
+                    (myStdOut, myErrOut, myExitCode) = getOutput msg in 
+                    case myExitCode of
+                        100 -> do exitWith $ ExitFailure myExitCode
+                        101 -> do exitWith $ ExitFailure myExitCode
+                        _ -> do
+                            putStrLn myStdOut
+                            hPutStrLn stderr myErrOut
+                            case myExitCode of
+                                0 -> exitWith ExitSuccess
+                                _ -> exitWith $ ExitFailure myExitCode
+                        
+
+
 
     --msg <- getLine
 ------------------------------------------------------------
@@ -550,13 +557,13 @@ eitherParseToLilBoard str =
 
 takeTurnRetLil :: To -> To
 takeTurnRetLil board =
-    case findWinStep' board of
+    case findWinStep board of
         Just b -> b
         Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
    
 maybeTakeTurnRetLil :: To -> Maybe To
 maybeTakeTurnRetLil board =
-    case findWinStep' board of
+    case findWinStep board of
         Just b -> Just b
         Nothing -> maybeFindNonDoomedBoard $ genAllPossibleMoves board board []
 
@@ -573,15 +580,20 @@ findWinStep board =
             Nothing -> Nothing
             Just i -> Just $ allPossMoves !! i
             
-findWinStep' :: To -> Maybe To
-findWinStep' board = 
-    let
-        allPossMoves = genAllPossibleMoves board board []
-        allPossScores = calcAllBoardsScore allPossMoves []
-    in
-        case findIndex (== 50) allPossScores of
-            Nothing -> Nothing
-            Just i -> Just $ allPossMoves !! i
+-- findWinStep :: To -> Maybe To
+-- findWinStep board = 
+--     let
+--         allPossMoves = genAllPossibleMoves board board []
+--         allPossScores = calcAllBoardsScore allPossMoves []
+--     in
+--         case findIndex (== 50) allPossScores of
+--             Nothing -> Nothing
+--             Just i -> Just $ allPossMoves !! i
+
+
+
+
+    
 
 genAllPossibleMoves :: To -> To -> [To] -> [To]
 genAllPossibleMoves board genBoard acc = 
@@ -637,7 +649,7 @@ maybeFindNonDoomedBoard (board:remBoards) =
 
 isBoardDoomed :: To -> Bool
 isBoardDoomed board = 
-    case findWinStep' board of
+    case findWinStep board of
         Nothing -> False
         Just _ -> True
 
