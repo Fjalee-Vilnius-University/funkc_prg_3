@@ -1,9 +1,8 @@
-module Task3 where
+module Main where
 import Data.List as L
 import Data.Char as C
 import System.Environment
 import System.Exit
-import Task3Message
 import System.IO (hPutStrLn, stderr)
 
 ---haskel executable
@@ -498,18 +497,34 @@ getOutput jsonMsg =
 main :: IO()
 main = do
     args <- getArgs
-    msg <- getLine
-    let 
-        (myStdOut, myErrOut, myExitCode) = getOutput msg in 
-        case myExitCode of
-            100 -> do exitWith $ ExitFailure myExitCode
-            101 -> do exitWith $ ExitFailure myExitCode
-            _ -> do
-                putStrLn $ show args
-                putStrLn myStdOut
-                hPutStrLn stderr myErrOut
-                exitWith $ ExitFailure myExitCode
+    case head args of
+        "X" -> do
+            msg <- getLine
+            let 
+                (myStdOut, myErrOut, myExitCode) = getOutput msg in 
+                case myExitCode of
+                    100 -> do exitWith $ ExitFailure myExitCode
+                    101 -> do exitWith $ ExitFailure myExitCode
+                    _ -> do
+                        putStrLn $ show args
+                        putStrLn myStdOut
+                        hPutStrLn stderr myErrOut
+                        exitWith $ ExitFailure myExitCode
+        "O" -> do
+            msg0 <- getLine
+            msg <- getLine
+            let
+                (myStdOut, myErrOut, myExitCode) = getOutput msg in 
+                case myExitCode of
+                    100 -> do exitWith $ ExitFailure myExitCode
+                    101 -> do exitWith $ ExitFailure myExitCode
+                    _ -> do
+                        putStrLn $ show args
+                        putStrLn myStdOut
+                        hPutStrLn stderr myErrOut
+                        exitWith $ ExitFailure myExitCode
 
+    --msg <- getLine
 ------------------------------------------------------------
 ------------------------For getOutput-----------------------
 ------------------------------------------------------------
