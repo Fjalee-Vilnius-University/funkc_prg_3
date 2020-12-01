@@ -2,6 +2,9 @@ module Task3 where
 import Data.List as L
 import Data.Char as C
 import System.Environment
+import System.Exit
+import Task3Message
+import System.IO (hPutStrLn, stderr)
 
 ---haskel executable
     ---executable parameters
@@ -172,14 +175,14 @@ parseJLString str orgStr =
 -----------------------Converter from LW2--------------------------
 -------------------------------------------------------------------
 
-convert :: Int -> JsonLikeValue -> To
+convert :: Int -> JsonLikeValue -> Either InvalidState To
 convert size wholeMap =
     case getAllTurnsArr wholeMap ([], [], []) of
-        Left a -> error $ show a
+        Left a -> Left a
         Right allTurnsArr -> 
             case parseArrToLIL allTurnsArr (createEmptyLILArr size []) of
-                Left a -> error $ show a
-                Right a -> a
+                Left a -> Left a
+                Right a -> Right a
         
 createEmptyLILArr :: Int -> [[(Int, Char)]] -> [[(Int, Char)]]
 createEmptyLILArr 0 arr = arr
@@ -423,38 +426,75 @@ jsonString a = show (length a) ++ ":" ++ a
 -- 100 Incoming message is malformed (bad syntax)
 -- 101 Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)
 
+getOutput :: String -> (String, String, Int)
+getOutput jsonMsg = 
+    case eitherParseToLilBoard jsonMsg of
+        Left Order -> 
+            let
+                myStdOut = jsonMsg
+                myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)")
+                myExitCode = 101
+            in
+                (myStdOut, myErrOut, myExitCode)
+        Left Duplicates ->
+            let
+                myStdOut = jsonMsg
+                myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is malformed (bad syntax)")
+                myExitCode = 100
+            in
+                (myStdOut, myErrOut, myExitCode)
+        Right a ->
+            let
+                board = populateBlankVals a
+                boardAfterMyTurn = maybeTakeTurnRetLil board
+            in
+                case boardAfterMyTurn of
+                    Nothing -> 
+                        let
+                            myStdOut = jsonMsg
+                            myErrOut = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
+                            myExitCode = 20
+                        in
+                            (myStdOut, myErrOut, myExitCode)
+                    Just boardAfterMyTurn ->
+                        let
+                            myStdOut = takeTurnIfPossibleRetJsonMessage jsonMsg
+                            (myMoveX, myMoveY, myMoveV) = findDif board boardAfterMyTurn
+                            myErrOut = getStrToPrintStatusMsg (boardAfterMyTurn, ("My Turn is " ++ (show myMoveV) ++ " to " ++ "(" ++ (show myMoveX) ++ "," ++ (show myMoveY) ++ ")"))
+                            myExitCode 
+                                | (isWin board /= 'b') = 10
+                                | (isBoardFull board) = 12
+                                | otherwise = 0
+                        in
+                            (myStdOut, myErrOut, myExitCode)
 
 main :: IO()
 main = do
-    iAmX <- getArgs --fix
-    putStrLn "Waiting for opponent's turn"
-    jsonMsg <- getLine
-    --stderr
-    --exit code
-    putStrLn $ takeTurnRetJsonMessage jsonMsg
-
-
-    
-myMain jsonMsg = 
-    let
-        board = populateBlankVals $ parseToLilBoard jsonMsg
-
-        msgForStatus = if (isBoardFull board || (isWin board /= 'b'))
-        then getStrToPrintStatusMsg (board ,"I cannot perform any moves because game is already ended (board is full or there is a winner)")
-        else getStrToPrintStatusMsg (takeTurnRetLil board ,"")
-
+    msg <- getLine
+    let 
+        (myStdOut, myErrOut, myExitCode) = getOutput msg in do
+        putStrLn myStdOut
+        hPutStrLn stderr myErrOut
+        exitWith $ ExitFailure myExitCode
         
-    in
-        ""
-
-
 
 ------------------------------------------------------------
-------------------------For myMain--------------------------
+------------------------For getOutput--------------------------
 ------------------------------------------------------------
 
 parseToLilBoard :: String -> To
-parseToLilBoard str = convert 3 (parse str)
+parseToLilBoard str = 
+    case convert 3 (parse str) of
+        Left a -> error $ show a
+        Right a -> a
+    
+
+eitherParseToLilBoard :: String -> Either InvalidState To
+eitherParseToLilBoard str = 
+    case convert 3 (parse str) of
+        Left a -> Left a
+        Right a -> Right a
+
 
 ---------
 
@@ -463,7 +503,13 @@ takeTurnRetLil board =
     case findWinStep board of
         Just b -> b
         Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
-        
+   
+maybeTakeTurnRetLil :: To -> Maybe To
+maybeTakeTurnRetLil board =
+    case findWinStep board of
+        Just b -> Just b
+        Nothing -> maybeFindNonDoomedBoard $ genAllPossibleMoves board board []
+
 findWinStep :: To -> Maybe To
 findWinStep board = 
     let
@@ -522,6 +568,13 @@ findNonDoomedBoard (board:remBoards) =
         False -> board
         True -> findNonDoomedBoard remBoards
 
+maybeFindNonDoomedBoard :: [To] -> Maybe To
+maybeFindNonDoomedBoard [] = Nothing
+maybeFindNonDoomedBoard (board:remBoards) =
+    case isBoardDoomed board of
+        False -> Just board
+        True -> maybeFindNonDoomedBoard remBoards
+
 isBoardDoomed :: To -> Bool
 isBoardDoomed board = 
     case findWinStep board of
@@ -532,6 +585,12 @@ isBoardDoomed board =
        
 takeTurnRetJsonMessage :: String -> String
 takeTurnRetJsonMessage msg = convertBack $ takeTurnRetTurnOrder msg
+
+takeTurnIfPossibleRetJsonMessage :: String -> String
+takeTurnIfPossibleRetJsonMessage msg = 
+    case maybeTakeTurnRetTurnOrder msg of
+        Nothing -> msg
+        Just a -> convertBack a
 
     
 takeTurnRetTurnOrder :: String -> ([Int], [Int], [Char])
@@ -544,6 +603,21 @@ takeTurnRetTurnOrder msg =
         case getAllTurnsArr (parse msg) ([], [], []) of
             Left a -> error  ("error received: Left " ++ show a)
             Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
+
+maybeTakeTurnRetTurnOrder :: String -> Maybe ([Int], [Int], [Char])
+maybeTakeTurnRetTurnOrder msg = 
+    let
+        oldBoard = populateBlankVals $ parseToLilBoard msg
+    in 
+        case (maybeTakeTurnRetLil oldBoard) of
+            Nothing -> Nothing
+            Just newBoard ->
+                case (maybeFindDif oldBoard newBoard) of
+                    Nothing -> Nothing
+                    Just newMove -> 
+                        case getAllTurnsArr (parse msg) ([], [], []) of
+                            Left _ -> Nothing
+                            Right movesOrder -> Just $ addMoveToOrderedMoves movesOrder newMove
 
 ----------
 
@@ -564,6 +638,29 @@ getStrToDrawBoard board =
         
 addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
 addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ----------------------------------------------
 --------Simply understandable functions-------
@@ -648,6 +745,19 @@ findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a :
     | (sq9a /= sq9b) = (2, 2, takeNonB (snd sq9a) (snd sq9b))
     | otherwise = error "Two boards are the same"
 
+maybeFindDif :: [[(Int, Char)]] -> [[(Int, Char)]] -> Maybe (Int, Int, Char)
+maybeFindDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a : sq9a : [])  : [])
+        ((sq1b : sq2b : sq3b : []) : (sq4b : sq5b : sq6b : [])  : (sq7b : sq8b : sq9b : [])  : []) 
+    | (sq1a /= sq1b) = Just (0, 0, takeNonB (snd sq1a) (snd sq1b))
+    | (sq2a /= sq2b) = Just (1, 0, takeNonB (snd sq2a) (snd sq2b))
+    | (sq3a /= sq3b) = Just (2, 0, takeNonB (snd sq3a) (snd sq3b))
+    | (sq4a /= sq4b) = Just (0, 1, takeNonB (snd sq4a) (snd sq4b))
+    | (sq5a /= sq5b) = Just (1, 1, takeNonB (snd sq5a) (snd sq5b))
+    | (sq6a /= sq6b) = Just (2, 1, takeNonB (snd sq6a) (snd sq6b))
+    | (sq7a /= sq7b) = Just (0, 2, takeNonB (snd sq7a) (snd sq7b))
+    | (sq8a /= sq8b) = Just (1, 2, takeNonB (snd sq8a) (snd sq8b))
+    | (sq9a /= sq9b) = Just (2, 2, takeNonB (snd sq9a) (snd sq9b))
+    | otherwise = Nothing
 
 
 ----------------------USELESSS------------------
@@ -677,6 +787,7 @@ findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a :
 --         if (isBoardFull board || (isWin board /= 'b'))
 --             then Left msg
 --             else Right newMessage
+----fix, function changed------
 
 
 -- getStrToPutStatusMsg :: To -> String
@@ -684,3 +795,38 @@ findDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : sq8a :
 --     | (isBoardFull board || (isWin board /= 'b')) = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
 --     | otherwise = getStrToPrintStatusMsg (takeTurnRetLil board, "")
 
+    --in
+        --myExitCode
+        -- do
+        -- iAmX <- getArgs --fix
+        -- putStrLn "Waiting for opponent's turn"
+        -- --GOOD--     jsonMsg <- getLine
+        -- --stderr
+        -- putStrLn $ takeTurnRetJsonMessage jsonMsg
+        -- --exitWith
+
+-- test = 
+--     let
+--         msg = takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage message
+--         board = populateBlankVals $ parseToLilBoard msg
+--     in
+--         case maybeTakeTurnRetLil board of
+--             Nothing -> putStrLn $ getStrToPrintStatusMsg (board, test)
+--             Just a -> putStrLn $ getStrToPrintStatusMsg (board, takeTurnIfPossibleRetJsonMessage test)
+    
+
+-- myMain jsonMsg = 
+--     let
+--         case eitherParseToLilBoard jsonMsg of
+--             Order -> 101
+--             Duplicates -> 100
+--             a -> 
+--                 let
+--                     board = populateBlankVals a
+--                     msgForStatus = if (isBoardFull board || (isWin board /= 'b'))
+--                     then getStrToPrintStatusMsg (board ,"I cannot perform any moves because game is already ended (board is full or there is a winner)")
+--                     else getStrToPrintStatusMsg (takeTurnRetLil board ,"")
+--                 in
+        
+--     in
+--         ""
