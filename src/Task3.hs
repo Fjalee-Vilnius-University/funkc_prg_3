@@ -33,6 +33,17 @@ parse str =
             Right (b, "") -> b
             Right _ -> error "Some values are outside of map"
 
+eitherParse :: String -> Either String JsonLikeValue
+eitherParse str = 
+    case etherIsMessageMapEmpty str of
+        Left a -> Left a
+        Right False -> Right $ JLMap []
+        Right True ->
+            case parseJLMap str str of
+                Left _ -> Left "CantParse"
+                Right (b, "") -> Right b
+                Right _ -> Left "CantParse"
+
 isMessageMapEmpty :: String -> Bool
 isMessageMapEmpty str = 
     if (length str < 29)
@@ -41,6 +52,15 @@ isMessageMapEmpty str =
         then error $ "Invalid message received: " ++ str ++" message has to contain ether empty map \"de\" or valid values inside the map"
         else True
     else False
+
+etherIsMessageMapEmpty :: String -> Either String Bool
+etherIsMessageMapEmpty str = 
+    if (length str < 29)
+    then 
+        if (length str > 2)
+        then Left "CantParse"
+        else Right True
+    else Right False
 
 parseJLMap :: String -> String -> Either String (JsonLikeValue, String)
 parseJLMap ('d':t) orgStr = 
@@ -429,18 +449,25 @@ jsonString a = show (length a) ++ ":" ++ a
 getOutput :: String -> (String, String, Int)
 getOutput jsonMsg = 
     case eitherParseToLilBoard jsonMsg of
-        Left Order -> 
+        Left "CantParse" ->
+            let
+                myStdOut = jsonMsg
+                myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is malformed (bad syntax)")
+                myExitCode = 100
+            in
+                (myStdOut, myErrOut, myExitCode)
+        Left "Order" -> 
             let
                 myStdOut = jsonMsg
                 myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)")
                 myExitCode = 101
             in
                 (myStdOut, myErrOut, myExitCode)
-        Left Duplicates ->
+        Left "Duplicates" ->
             let
                 myStdOut = jsonMsg
-                myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is malformed (bad syntax)")
-                myExitCode = 100
+                myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)")
+                myExitCode = 101
             in
                 (myStdOut, myErrOut, myExitCode)
         Right a ->
@@ -470,16 +497,21 @@ getOutput jsonMsg =
 
 main :: IO()
 main = do
+    args <- getArgs
     msg <- getLine
     let 
-        (myStdOut, myErrOut, myExitCode) = getOutput msg in do
-        putStrLn myStdOut
-        hPutStrLn stderr myErrOut
-        exitWith $ ExitFailure myExitCode
-        
+        (myStdOut, myErrOut, myExitCode) = getOutput msg in 
+        case myExitCode of
+            100 -> do exitWith $ ExitFailure myExitCode
+            101 -> do exitWith $ ExitFailure myExitCode
+            _ -> do
+                putStrLn $ show args
+                putStrLn myStdOut
+                hPutStrLn stderr myErrOut
+                exitWith $ ExitFailure myExitCode
 
 ------------------------------------------------------------
-------------------------For getOutput--------------------------
+------------------------For getOutput-----------------------
 ------------------------------------------------------------
 
 parseToLilBoard :: String -> To
@@ -489,11 +521,14 @@ parseToLilBoard str =
         Right a -> a
     
 
-eitherParseToLilBoard :: String -> Either InvalidState To
+eitherParseToLilBoard :: String -> Either String To
 eitherParseToLilBoard str = 
-    case convert 3 (parse str) of
+    case eitherParse str of
         Left a -> Left a
-        Right a -> Right a
+        Right a -> 
+            case convert 3 a of
+                Left b -> Left $ show b
+                Right b -> Right b
 
 
 ---------
@@ -634,7 +669,7 @@ getStrToDrawBoard board =
                    "---------",
                    [snd sq4] ++  " | " ++  [snd sq5] ++ " | " ++ [snd sq6] ,
                    "---------",
-                   [snd sq7] ++  " | " ++  [snd sq8] ++ " | " ++ [snd sq9], ""]
+                   [snd sq7] ++  " | " ++  [snd sq8] ++ " | " ++ [snd sq9]]
         
 addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
 addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
