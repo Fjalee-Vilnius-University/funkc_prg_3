@@ -488,8 +488,8 @@ getOutput jsonMsg =
                             (myMoveX, myMoveY, myMoveV) = findDif board boardAfterMyTurn
                             myErrOut = getStrToPrintStatusMsg (boardAfterMyTurn, ("My Turn is " ++ (show myMoveV) ++ " to " ++ "(" ++ (show myMoveX) ++ "," ++ (show myMoveY) ++ ")"))
                             myExitCode 
-                                | (isWin board /= 'b') = 10
-                                | (isBoardFull board) = 12
+                                | (isWin boardAfterMyTurn /= 'b') = 10
+                                | (isBoardFull boardAfterMyTurn) = 12
                                 | otherwise = 0
                         in
                             (myStdOut, myErrOut, myExitCode)
@@ -497,7 +497,6 @@ getOutput jsonMsg =
 main :: IO()
 main = do
     args <- getArgs
-    --let args = ["O"] in
     case head args of
         "X" -> do
             msg <- getLine
@@ -551,13 +550,13 @@ eitherParseToLilBoard str =
 
 takeTurnRetLil :: To -> To
 takeTurnRetLil board =
-    case findWinStep board of
+    case findWinStep' board of
         Just b -> b
         Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
    
 maybeTakeTurnRetLil :: To -> Maybe To
 maybeTakeTurnRetLil board =
-    case findWinStep board of
+    case findWinStep' board of
         Just b -> Just b
         Nothing -> maybeFindNonDoomedBoard $ genAllPossibleMoves board board []
 
@@ -577,17 +576,10 @@ findWinStep board =
 findWinStep' :: To -> Maybe To
 findWinStep' board = 
     let
-        player
-            | isXTurn board = ('X', 10)
-            | otherwise = ('O', -10)
         allPossMoves = genAllPossibleMoves board board []
         allPossScores = calcAllBoardsScore allPossMoves []
-        test =
-            case findIndex (== (snd player)) allPossScores of
-            Nothing -> Nothing
-            Just i -> Just $ allPossMoves !! i
     in
-        case findIndex (== (snd player)) allPossScores of
+        case findIndex (== 50) allPossScores of
             Nothing -> Nothing
             Just i -> Just $ allPossMoves !! i
 
@@ -645,7 +637,7 @@ maybeFindNonDoomedBoard (board:remBoards) =
 
 isBoardDoomed :: To -> Bool
 isBoardDoomed board = 
-    case findWinStep board of
+    case findWinStep' board of
         Nothing -> False
         Just _ -> True
 
