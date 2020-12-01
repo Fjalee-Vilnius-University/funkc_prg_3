@@ -567,6 +567,9 @@ maybeTakeTurnRetLil board =
         Just b -> Just b
         Nothing -> maybeFindNonDoomedBoard $ genAllPossibleMoves board board []
 
+maybeTakeTurnRetLil' :: To -> Maybe To
+maybeTakeTurnRetLil' board = Just $ miniMax board
+
 findWinStep :: To -> Maybe To
 findWinStep board = 
     let
@@ -591,8 +594,56 @@ findWinStep board =
 --             Just i -> Just $ allPossMoves !! i
 
 
+--test = calcFutureBoardScore [[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'X'),(2,'O')],[(0,'b'),(1,'b'),(2,'b')]]
+test = calcFutureBoardScore $ populateBlankVals $ parseToLilBoard $ "d4:prevd4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee"
+--test = calcFutureBoardScore $ populateBlankVals $ parseToLilBoard $ "d4:prevd4:prevd4:prevd4:lastld4:datali0ei1e1:Oeeee4:lastld4:datali2ei0e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee"
 
+miniMax :: To -> To
+miniMax board =
+    let
+        player
+            | isXTurn board = ('X', 10)
+            | otherwise = ('O', -10)
+        allPossMoves = genAllPossibleMoves board board []
+        allFutScores = map calcFutureBoardScore allPossMoves
+    in
+        case findIndex (== (snd player)) allFutScores of
+            Just i -> allPossMoves !! i
+            Nothing -> 
+                case findIndex (== 0) allFutScores of
+                    Just i -> allPossMoves !! i
+                    Nothing -> 
+                        case findIndex (== (-(snd player))) allFutScores of
+                            Just i -> allPossMoves !! i
+                            Nothing -> error "miniMax func"
 
+calcFutureBoardScore :: To -> Int
+calcFutureBoardScore board =
+    let
+        player
+            | isXTurn board = ('X', 10)
+            | otherwise = ('O', -10)
+        allPossMoves = genAllPossibleMoves board board []
+        allPossScores = calcAllBoardsScore allPossMoves []
+    in
+        if (length allPossScores == 0) then calcScore board else 
+            case findIndex (== (snd player)) allPossScores of
+                Just _ -> (snd player)
+                Nothing -> 
+                    let
+                        allPossFutScores = (map (calcFutureBoardScore) allPossMoves)
+                    in
+                        case findIndex (== (snd player)) allPossFutScores of
+                            Just _ -> (snd player)
+                            Nothing ->
+                                case findIndex (== 0) allPossFutScores of
+                                    Just _ -> 0
+                                    Nothing ->
+                                        case findIndex (== (-(snd player))) allPossFutScores of
+                                            Just _ -> (-(snd player))
+                                            Nothing -> error $ "calcFutureBoardScore func err" ++ show allPossFutScores
+
+--temp b = 
     
 
 genAllPossibleMoves :: To -> To -> [To] -> [To]
@@ -664,6 +715,12 @@ takeTurnIfPossibleRetJsonMessage msg =
         Nothing -> msg
         Just a -> convertBack a
 
+takeTurnIfPossibleRetJsonMessage' :: String -> String
+takeTurnIfPossibleRetJsonMessage' msg = 
+    case maybeTakeTurnRetTurnOrder' msg of
+        Nothing -> msg
+        Just a -> convertBack a     
+
     
 takeTurnRetTurnOrder :: String -> ([Int], [Int], [Char])
 takeTurnRetTurnOrder msg = 
@@ -682,6 +739,21 @@ maybeTakeTurnRetTurnOrder msg =
         oldBoard = populateBlankVals $ parseToLilBoard msg
     in 
         case (maybeTakeTurnRetLil oldBoard) of
+            Nothing -> Nothing
+            Just newBoard ->
+                case (maybeFindDif oldBoard newBoard) of
+                    Nothing -> Nothing
+                    Just newMove -> 
+                        case getAllTurnsArr (parse msg) ([], [], []) of
+                            Left _ -> Nothing
+                            Right movesOrder -> Just $ addMoveToOrderedMoves movesOrder newMove
+
+maybeTakeTurnRetTurnOrder' :: String -> Maybe ([Int], [Int], [Char])
+maybeTakeTurnRetTurnOrder' msg = 
+    let
+        oldBoard = populateBlankVals $ parseToLilBoard msg
+    in 
+        case (maybeTakeTurnRetLil' oldBoard) of
             Nothing -> Nothing
             Just newBoard ->
                 case (maybeFindDif oldBoard newBoard) of
