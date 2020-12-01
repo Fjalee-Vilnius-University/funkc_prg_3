@@ -36,8 +36,8 @@ eitherParse :: String -> Either String JsonLikeValue
 eitherParse str = 
     case etherIsMessageMapEmpty str of
         Left a -> Left a
-        Right False -> Right $ JLMap []
-        Right True ->
+        Right True -> Right $ JLMap []
+        Right False ->
             case parseJLMap str str of
                 Left _ -> Left "CantParse"
                 Right (b, "") -> Right b
@@ -497,11 +497,12 @@ getOutput jsonMsg =
 main :: IO()
 main = do
     args <- getArgs
+    --let args = ["O"] in
     case head args of
         "X" -> do
             msg <- getLine
             let 
-                (myStdOut, myErrOut, myExitCode) = getOutput msg in 
+                (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
                 case myExitCode of
                     100 -> do exitWith $ ExitFailure myExitCode
                     101 -> do exitWith $ ExitFailure myExitCode
@@ -568,6 +569,23 @@ findWinStep board =
             | otherwise = ('O', -10)
         allPossMoves = genAllPossibleMoves board board []
         allPossScores = calcAllBoardsScore allPossMoves []
+    in
+        case findIndex (== (snd player)) allPossScores of
+            Nothing -> Nothing
+            Just i -> Just $ allPossMoves !! i
+            
+findWinStep' :: To -> Maybe To
+findWinStep' board = 
+    let
+        player
+            | isXTurn board = ('X', 10)
+            | otherwise = ('O', -10)
+        allPossMoves = genAllPossibleMoves board board []
+        allPossScores = calcAllBoardsScore allPossMoves []
+        test =
+            case findIndex (== (snd player)) allPossScores of
+            Nothing -> Nothing
+            Just i -> Just $ allPossMoves !! i
     in
         case findIndex (== (snd player)) allPossScores of
             Nothing -> Nothing
