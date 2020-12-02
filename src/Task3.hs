@@ -445,6 +445,57 @@ jsonString a = show (length a) ++ ":" ++ a
 -- 100 Incoming message is malformed (bad syntax)
 -- 101 Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)
 
+-- getOutput :: String -> (String, String, Int)
+-- getOutput jsonMsg = 
+--     case eitherParseToLilBoard jsonMsg of
+--         Left "CantParse" ->
+--             let
+--                 myStdOut = jsonMsg
+--                 myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is malformed (bad syntax)")
+--                 myExitCode = 100
+--             in
+--                 (myStdOut, myErrOut, myExitCode)
+--         Left "Order" -> 
+--             let
+--                 myStdOut = jsonMsg
+--                 myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)")
+--                 myExitCode = 101
+--             in
+--                 (myStdOut, myErrOut, myExitCode)
+--         Left "Duplicates" ->
+--             let
+--                 myStdOut = jsonMsg
+--                 myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)")
+--                 myExitCode = 101
+--             in
+--                 (myStdOut, myErrOut, myExitCode)
+--         Right a ->
+--             let
+--                 board = populateBlankVals a
+--                 boardAfterMyTurn = maybeTakeTurnRetLil board
+--             in
+--                 case boardAfterMyTurn of
+--                     Nothing -> 
+--                         let
+--                             myStdOut = jsonMsg
+--                             myErrOut = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
+--                             myExitCode = 20
+--                         in
+--                             (myStdOut, myErrOut, myExitCode)
+--                     Just boardAfterMyTurn ->
+--                         let
+--                             myStdOut = takeTurnIfPossibleRetJsonMessage jsonMsg
+--                             (myMoveX, myMoveY, myMoveV) = findDif board boardAfterMyTurn
+--                             myErrOut = getStrToPrintStatusMsg (boardAfterMyTurn, ("My Turn is " ++ (show myMoveV) ++ " to " ++ "(" ++ (show myMoveX) ++ "," ++ (show myMoveY) ++ ")"))
+--                             myExitCode 
+--                                 | (isWin boardAfterMyTurn /= 'b') = 10
+--                                 | (isBoardFull boardAfterMyTurn) = 12
+--                                 | otherwise = 0
+--                         in
+--                             (myStdOut, myErrOut, myExitCode)
+
+                            
+
 getOutput :: String -> (String, String, Int)
 getOutput jsonMsg = 
     case eitherParseToLilBoard jsonMsg of
@@ -472,10 +523,10 @@ getOutput jsonMsg =
         Right a ->
             let
                 board = populateBlankVals a
-                boardAfterMyTurn = maybeTakeTurnRetLil board
+                boardAfterMyTurn = maybeTakeTurnRetLil' board
             in
                 case boardAfterMyTurn of
-                    Nothing -> 
+                    Nothing ->
                         let
                             myStdOut = jsonMsg
                             myErrOut = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
@@ -484,7 +535,7 @@ getOutput jsonMsg =
                             (myStdOut, myErrOut, myExitCode)
                     Just boardAfterMyTurn ->
                         let
-                            myStdOut = takeTurnIfPossibleRetJsonMessage jsonMsg
+                            myStdOut = takeTurnIfPossibleRetJsonMessage' jsonMsg
                             (myMoveX, myMoveY, myMoveV) = findDif board boardAfterMyTurn
                             myErrOut = getStrToPrintStatusMsg (boardAfterMyTurn, ("My Turn is " ++ (show myMoveV) ++ " to " ++ "(" ++ (show myMoveX) ++ "," ++ (show myMoveY) ++ ")"))
                             myExitCode 
@@ -494,11 +545,13 @@ getOutput jsonMsg =
                         in
                             (myStdOut, myErrOut, myExitCode)
 
+
+
 main :: IO()
 main = --do
     --args <- getArgs
     let 
-        args = ["X"] 
+        args = ["O"] 
     in
         case head args of
             "X" -> do
@@ -568,7 +621,10 @@ maybeTakeTurnRetLil board =
         Nothing -> maybeFindNonDoomedBoard $ genAllPossibleMoves board board []
 
 maybeTakeTurnRetLil' :: To -> Maybe To
-maybeTakeTurnRetLil' board = Just $ miniMax board
+maybeTakeTurnRetLil' board = 
+    case miniMax board of
+        [] -> Nothing
+        a -> Just a
 
 findWinStep :: To -> Maybe To
 findWinStep board = 
@@ -594,57 +650,119 @@ findWinStep board =
 --             Just i -> Just $ allPossMoves !! i
 
 
---test = calcFutureBoardScore [[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'X'),(2,'O')],[(0,'b'),(1,'b'),(2,'b')]]
-test = calcFutureBoardScore $ populateBlankVals $ parseToLilBoard $ "d4:prevd4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee"
---test = calcFutureBoardScore $ populateBlankVals $ parseToLilBoard $ "d4:prevd4:prevd4:prevd4:lastld4:datali0ei1e1:Oeeee4:lastld4:datali2ei0e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee"
 
-miniMax :: To -> To
-miniMax board =
+-- d4:prevd4:prevd4:prevd4:prevd4:lastld4:datali1ei2e1:Xeeee4:lastld4:datali0ei1e1:Oeeee4:lastld4:datali2ei0e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee
+-- X | O | X
+-- ---------
+-- O |   |
+-- ---------
+--   | X |
+
+-- d4:prevd4:prevd4:prevd4:prevd4:prevd4:lastld4:datali1ei1e1:Oeeee4:lastld4:datali1ei2e1:Xeeee4:lastld4:datali0ei1e1:Oeeee4:lastld4:datali2ei0e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee
+-- X | O | X
+-- ---------
+-- O | O |
+-- ---------
+--   | X |
+
+--d4:prevd4:prevd4:prevd4:prevd4:prevd4:prevd4:lastld4:datali2ei2e1:Xeeee4:lastld4:datali1ei1e1:Oeeee4:lastld4:datali1ei2e1:Xeeee4:lastld4:datali0ei1e1:Oeeee4:lastld4:datali2ei0e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee
+-- X | O | X
+-- ---------
+-- O | O | 
+-- ---------
+--   | X | X
+
+-- d4:prevd4:prevd4:prevd4:lastld4:datali2ei0e1:Oeeee4:lastld4:datali0ei1e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee
+-- X | O | O
+-- ---------
+-- X |   | 
+-- ---------
+--   |   |  
+
+test = 
     let
-        player
-            | isXTurn board = ('X', 10)
-            | otherwise = ('O', -10)
-        allPossMoves = genAllPossibleMoves board board []
-        allFutScores = map calcFutureBoardScore allPossMoves
+        board = populateBlankVals $ parseToLilBoard $ "de"
     in
-        case findIndex (== (snd player)) allFutScores of
-            Just i -> allPossMoves !! i
-            Nothing -> 
-                case findIndex (== 0) allFutScores of
-                    Just i -> allPossMoves !! i
-                    Nothing -> 
-                        case findIndex (== (-(snd player))) allFutScores of
-                            Just i -> allPossMoves !! i
-                            Nothing -> error "miniMax func"
+        miniMax board
 
-calcFutureBoardScore :: To -> Int
-calcFutureBoardScore board =
+-------------------------minimax--------------------------
+
+boardOneGenScores board =
     let
-        player
-            | isXTurn board = ('X', 10)
-            | otherwise = ('O', -10)
         allPossMoves = genAllPossibleMoves board board []
         allPossScores = calcAllBoardsScore allPossMoves []
     in
-        if (length allPossScores == 0) then calcScore board else 
-            case findIndex (== (snd player)) allPossScores of
-                Just _ -> (snd player)
-                Nothing -> 
-                    let
-                        allPossFutScores = (map (calcFutureBoardScore) allPossMoves)
-                    in
-                        case findIndex (== (snd player)) allPossFutScores of
-                            Just _ -> (snd player)
-                            Nothing ->
-                                case findIndex (== 0) allPossFutScores of
-                                    Just _ -> 0
-                                    Nothing ->
-                                        case findIndex (== (-(snd player))) allPossFutScores of
-                                            Just _ -> (-(snd player))
-                                            Nothing -> error $ "calcFutureBoardScore func err" ++ show allPossFutScores
+        (allPossMoves, allPossScores)
 
---temp b = 
-    
+pickBoardWithScore boards scores player = --error $ show boards
+    case findIndex (== player) scores of
+        Nothing -> Nothing
+        Just i -> Just $ boards !! i
+
+miniMax :: To -> To
+miniMax board =
+    if isBoardFull board then
+        []
+    else
+        let
+            player
+                | isXTurn board = ('X', 10)
+                | otherwise = ('O', -10)
+            (fstGenBoards, fstGenScores) = boardOneGenScores board
+        in
+            case length fstGenBoards of
+                1 -> head fstGenBoards
+                9 -> fstGenBoards !! 4
+                _ ->
+                    case pickBoardWithScore fstGenBoards fstGenScores (snd player) of
+                        Just i -> i
+                        Nothing -> 
+                            ---Paima lenta 1st gen kurioje laimi, kitu atjevu Nothing
+                            let
+                                futBoards = map miniMax fstGenBoards
+                                futScores = calcAllBoardsScore' futBoards
+                            in
+                                case pickBoardWithScore fstGenBoards futScores (snd player) of
+                                    Just i -> i
+                                    Nothing -> 
+                                        case pickBoardWithScore fstGenBoards futScores 0 of
+                                            Just i -> i
+                                            Nothing -> head fstGenBoards
+
+------------------------TESTTTT------------------------------------
+
+--con =
+    --
+
+boardOneGenScoresTest boards = 
+    let
+        (boardArr, scores) = boardOneGenScores boards
+    in
+        boardArr
+
+see1 :: To -> IO ()
+see1 board = strToIO $ boardStr board
+
+seeM :: [To] -> IO ()
+seeM boardArr = 
+    let
+        boardArrStr = map boardStr boardArr
+    in
+        strArrToIO $ boardArrStr
+        
+--[[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'X')],[(0,'b'),(1,'X'),(2,'b')]],[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'b')],[(0,'X'),(1,'X'),(2,'b')]],[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'b')],[(0,'b'),(1,'X'),(2,'X')]]]
+
+boardStr :: To -> String
+boardStr board = getStrToPrintStatusMsg (board, "")
+
+strToIO :: String -> IO()
+strToIO str = putStr str
+
+strArrToIO :: [String] -> IO()
+strArrToIO str = putStr $ unlines str
+
+------------------------TESTTTT------------------------------------
+
 
 genAllPossibleMoves :: To -> To -> [To] -> [To]
 genAllPossibleMoves board genBoard acc = 
@@ -671,6 +789,10 @@ genPossibleMove orgBoard board =
 calcAllBoardsScore :: [To] -> [Int] -> [Int]
 calcAllBoardsScore [] acc = acc
 calcAllBoardsScore (h:t) acc = calcAllBoardsScore t (acc ++ [calcScore h])
+
+calcAllBoardsScore' :: [To] -> [Int]
+calcAllBoardsScore' [] = error "empty array shouldnt be passed into calcAllBoardsScore'"
+calcAllBoardsScore' arr = calcAllBoardsScore arr []
 
 calcScore :: To -> Int
 calcScore board = 
