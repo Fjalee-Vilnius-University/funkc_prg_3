@@ -535,27 +535,34 @@ getOutput jsonMsg =
         Right a ->
             let
                 board = populateBlankVals a
-                boardAfterMyTurn = maybeTakeTurnRetLil' board
             in
-                case boardAfterMyTurn of
-                    Nothing ->
-                        let
-                            myStdOut = jsonMsg
-                            myErrOut = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
-                            myExitCode = 20
-                        in
-                            (myStdOut, myErrOut, myExitCode)
-                    Just boardAfterMyTurn ->
-                        let
-                            myStdOut = takeTurnIfPossibleRetJsonMessage' jsonMsg
-                            (myMoveX, myMoveY, myMoveV) = findDif board boardAfterMyTurn
-                            myErrOut = getStrToPrintStatusMsg (boardAfterMyTurn, ("My Turn is " ++ (show myMoveV) ++ " to " ++ "(" ++ (show myMoveX) ++ "," ++ (show myMoveY) ++ ")"))
-                            myExitCode 
-                                | (isWin boardAfterMyTurn /= 'b') = 10
-                                | (isBoardFull boardAfterMyTurn) = 12
-                                | otherwise = 0
-                        in
-                            (myStdOut, myErrOut, myExitCode)
+                if (isWin board /= 'b' || isBoardFull board) then
+                    let
+                        myStdOut = jsonMsg
+                        myErrOut = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
+                        myExitCode = 20
+                    in
+                        (myStdOut, myErrOut, myExitCode)
+                else
+                    case maybeTakeTurnRetLil' board of
+                        Nothing ->
+                            let
+                                myStdOut = jsonMsg
+                                myErrOut = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
+                                myExitCode = 20
+                            in
+                                (myStdOut, myErrOut, myExitCode)
+                        Just boardAfterMyTurn ->
+                            let
+                                myStdOut = takeTurnIfPossibleRetJsonMessage' jsonMsg
+                                (myMoveX, myMoveY, myMoveV) = findDif board boardAfterMyTurn
+                                myErrOut = getStrToPrintStatusMsg (boardAfterMyTurn, ("My Turn is " ++ (show myMoveV) ++ " to " ++ "(" ++ (show myMoveX) ++ "," ++ (show myMoveY) ++ ")"))
+                                myExitCode 
+                                    | (isWin boardAfterMyTurn /= 'b') = 10
+                                    | (isBoardFull boardAfterMyTurn) = 12
+                                    | otherwise = 0
+                            in
+                                (myStdOut, myErrOut, myExitCode)
 
 
 
@@ -600,7 +607,7 @@ main = do
     args <- getArgs
     msg <- getLine
     let 
-        (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
+        (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "*" else getOutput msg in
         case myExitCode of
             100 -> do exitWith $ ExitFailure myExitCode
             101 -> do exitWith $ ExitFailure myExitCode
@@ -754,12 +761,16 @@ miniMax board =
                                 boardsNScores = map miniMax fstGenBoards
                                 (futBoards, futScores) = sepBoardsFromScores boardsNScores ([], [])
                             in
-                                case pickBoardWithScore fstGenBoards futScores (snd player) of
-                                    Just i -> (i, snd player)
-                                    Nothing -> 
-                                        case pickBoardWithScore fstGenBoards futScores 0 of
-                                            Just i -> (i, 0)
-                                            Nothing -> (head fstGenBoards, -(snd player))
+                                case board of
+                                    ----------THIS LINE IS FOR DEBUGING WHEN BOARD IS INPUTED---------------------------
+                                    --[[(0, 'O'), (1, 'b'), (2, 'X')], [(0, 'b'), (1, 'b'), (2, 'X')], [(0, 'b'), (1, 'b'), (2, 'b')]] -> error $ show (futBoards, futScores)
+                                    ------------------------------------------------------------------------------------
+                                    _ -> case pickBoardWithScore fstGenBoards futScores (snd player) of
+                                            Just i -> (i, snd player)
+                                            Nothing -> 
+                                                case pickBoardWithScore fstGenBoards futScores 0 of
+                                                    Just i -> (i, 0)
+                                                    Nothing -> (head fstGenBoards, -(snd player))
 
 sepBoardsFromScores ::  [(To, Int)] -> ([To], [Int]) -> ([To], [Int])
 sepBoardsFromScores [] acc = acc
