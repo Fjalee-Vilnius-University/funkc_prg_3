@@ -547,40 +547,59 @@ getOutput jsonMsg =
 
 
 
-main :: IO()
-main = --do
-    --args <- getArgs
-    let 
-        args = ["O"] 
-    in
-        case head args of
-            "X" -> do
-                msg <- getLine
-                let 
-                    (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
-                    case myExitCode of
-                        100 -> do exitWith $ ExitFailure myExitCode
-                        101 -> do exitWith $ ExitFailure myExitCode
-                        _ -> do
-                            putStrLn myStdOut
-                            hPutStrLn stderr myErrOut
-                            case myExitCode of
-                                0 -> exitWith ExitSuccess
-                                _ -> exitWith $ ExitFailure myExitCode
-            "O" -> do
-                msg <- getLine
-                let
-                    (myStdOut, myErrOut, myExitCode) = getOutput msg in 
-                    case myExitCode of
-                        100 -> do exitWith $ ExitFailure myExitCode
-                        101 -> do exitWith $ ExitFailure myExitCode
-                        _ -> do
-                            putStrLn myStdOut
-                            hPutStrLn stderr myErrOut
-                            case myExitCode of
-                                0 -> exitWith ExitSuccess
-                                _ -> exitWith $ ExitFailure myExitCode
+-- main :: IO()
+-- main = do
+--     args <- getArgs
+--     --let 
+--         --args = ["O"] 
+--     --in
+--     case head args of
+--         "X" -> do
+--             msg <- getLine
+--             let 
+--                 (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
+--                 case myExitCode of
+--                     100 -> do exitWith $ ExitFailure myExitCode
+--                     101 -> do exitWith $ ExitFailure myExitCode
+--                     _ -> do
+--                         putStrLn myStdOut
+--                         hPutStrLn stderr myErrOut
+--                         case myExitCode of
+--                             0 -> exitWith ExitSuccess
+--                             _ -> exitWith $ ExitFailure myExitCode
+--         "O" -> do
+--             msg <- getLine
+--             let
+--                 (myStdOut, myErrOut, myExitCode) = getOutput msg in 
+--                 case myExitCode of
+--                     100 -> do exitWith $ ExitFailure myExitCode
+--                     101 -> do exitWith $ ExitFailure myExitCode
+--                     _ -> do
+--                         putStrLn myStdOut
+--                         hPutStrLn stderr myErrOut
+--                         case myExitCode of
+--                             0 -> exitWith ExitSuccess
+--                             _ -> exitWith $ ExitFailure myExitCode
                         
+
+
+main :: IO()
+main = do
+    --args <- getArgs
+    msg <- getLine
+    let 
+        (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
+        case myExitCode of
+            100 -> do exitWith $ ExitFailure myExitCode
+            101 -> do exitWith $ ExitFailure myExitCode
+            _ -> do
+                putStrLn myStdOut
+                hPutStrLn stderr myErrOut
+                case myExitCode of
+                    0 -> exitWith ExitSuccess
+                    _ -> exitWith $ ExitFailure myExitCode
+
+
 
 
 
