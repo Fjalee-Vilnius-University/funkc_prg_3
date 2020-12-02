@@ -623,8 +623,8 @@ maybeTakeTurnRetLil board =
 maybeTakeTurnRetLil' :: To -> Maybe To
 maybeTakeTurnRetLil' board = 
     case miniMax board of
-        [] -> Nothing
-        a -> Just a
+        ([], _) -> Nothing
+        (a, _) -> Just a
 
 findWinStep :: To -> Maybe To
 findWinStep board = 
@@ -694,15 +694,16 @@ boardOneGenScores board =
     in
         (allPossMoves, allPossScores)
 
+pickBoardWithScore :: [To] -> [Int] -> Int -> Maybe To
 pickBoardWithScore boards scores player = --error $ show boards
     case findIndex (== player) scores of
         Nothing -> Nothing
         Just i -> Just $ boards !! i
 
-miniMax :: To -> To
+miniMax :: To -> (To,Int)
 miniMax board =
     if isBoardFull board then
-        []
+        ([], 0)
     else
         let
             player
@@ -711,23 +712,27 @@ miniMax board =
             (fstGenBoards, fstGenScores) = boardOneGenScores board
         in
             case length fstGenBoards of
-                1 -> head fstGenBoards
-                9 -> fstGenBoards !! 4
+                1 -> (head fstGenBoards, head fstGenScores)
+                9 -> (fstGenBoards !! 4, 0)
                 _ ->
                     case pickBoardWithScore fstGenBoards fstGenScores (snd player) of
-                        Just i -> i
+                        Just i -> (i, snd player)
                         Nothing -> 
                             ---Paima lenta 1st gen kurioje laimi, kitu atjevu Nothing
                             let
-                                futBoards = map miniMax fstGenBoards
-                                futScores = calcAllBoardsScore' futBoards
+                                boardsNScores = map miniMax fstGenBoards
+                                (futBoards, futScores) = sepBoardsFromScores boardsNScores ([], [])
                             in
                                 case pickBoardWithScore fstGenBoards futScores (snd player) of
-                                    Just i -> i
+                                    Just i -> (i, snd player)
                                     Nothing -> 
                                         case pickBoardWithScore fstGenBoards futScores 0 of
-                                            Just i -> i
-                                            Nothing -> head fstGenBoards
+                                            Just i -> (i, 0)
+                                            Nothing -> (head fstGenBoards, -(snd player))
+
+sepBoardsFromScores ::  [(To, Int)] -> ([To], [Int]) -> ([To], [Int])
+sepBoardsFromScores [] acc = acc
+sepBoardsFromScores (h:t) (boards, scores) = sepBoardsFromScores t (boards ++ [fst h], scores ++ [snd h])
 
 ------------------------TESTTTT------------------------------------
 
