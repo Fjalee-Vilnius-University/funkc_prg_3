@@ -389,13 +389,24 @@ convertBack mTuple =
 
 xyvArrayToJson :: [(Int, Int, Char)] -> String
 xyvArrayToJson [] = ""
-xyvArrayToJson (h:t) = 
+xyvArrayToJson (h:t) =
     let
-        moveBenStr = xyvTupleToLMDL h
+        moveJsonStr = xyvTupleToLMDL h
     in
-        case xyvArrayToJson t  of
-        "" -> jsonMap[("last", moveBenStr)]
-        a -> jsonMap[("prev", a), ("last", moveBenStr)] 
+        case xyvArrayToJson t of
+        "" -> jsonMap[("last", moveJsonStr)]
+        a -> jsonMap[("prev", a), ("last", moveJsonStr)]
+
+-- xyvArrayToJson :: [(Int, Int, Char)] -> String
+-- xyvArrayToJson [] = ""
+-- xyvArrayToJson (h:t) = 
+--     let
+--         moveJsonStr = xyvTupleToLMDL h
+--     in
+--         case xyvArrayToJson t of
+--         "" -> jsonMap[("last", moveJsonStr)]
+--         a -> error $ show (a)
+--             --jsonMap[("prev", a), ("last", moveJsonStr)]
 
 xyvTupleToLMDL :: (Int, Int, Char) -> String
 xyvTupleToLMDL (x, y, v) = jsonList [jsonMap [("data", (jsonList [jsonInt x, jsonInt y, jsonString [v]]))]]
@@ -410,6 +421,7 @@ fromXYVTuplesToXYVArrays ((hx:tx), (hy:ty), (hv:tv)) acc =
 
 jsonMap :: [(String, String)] -> String
 jsonMap arr = jsonMap' arr []
+
 
 jsonMap' :: [(String, String)] -> String -> String
 jsonMap' [] acc = "d" ++ acc ++ "e"
@@ -585,7 +597,7 @@ getOutput jsonMsg =
 
 main :: IO()
 main = do
-    --args <- getArgs
+    args <- getArgs
     msg <- getLine
     let 
         (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
@@ -927,7 +939,7 @@ getStrToDrawBoard board =
                    [snd sq7] ++  " | " ++  [snd sq8] ++ " | " ++ [snd sq9]]
         
 addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
-addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = (xs ++ [x], ys ++ [y], vs ++ [v])
+addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = ([x] ++ xs, [y] ++ ys, [v] ++ vs)
 
 
 
