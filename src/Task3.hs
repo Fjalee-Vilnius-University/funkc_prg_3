@@ -311,23 +311,6 @@ delFromMap wholeMap itemDel =
     case wholeMap of
         JLMap arrayOfTuples -> JLMap $ delete itemDel arrayOfTuples
 
-
--------------------------------------------------------------------
-------------------------           ----------------------------
--------------------------------------------------------------------
-whichSqBlank :: To -> Maybe (Int, Int) 
-whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
-    | (snd sq1 == 'b') = Just (0, 0)
-    | (snd sq2 == 'b') = Just (0, 1)
-    | (snd sq3 == 'b') = Just (0, 2)
-    | (snd sq4 == 'b') = Just (1, 0)
-    | (snd sq5 == 'b') = Just (1, 1)
-    | (snd sq6 == 'b') = Just (1, 2)
-    | (snd sq7 == 'b') = Just (2, 0)
-    | (snd sq8 == 'b') = Just (2, 1)
-    | (snd sq9 == 'b') = Just (2, 2)
-    | otherwise = Nothing
-
 -------------------------------------------------------------------
 --------------Convert board to message for another bot-------------
 -------------------------------------------------------------------
@@ -388,8 +371,23 @@ jsonInt a = "i" ++ show a ++ "e"
 jsonString :: String -> String
 jsonString a = show (length a) ++ ":" ++ a
 
+-------------------MAIN's-----------------------
 
--------------------MAINS-----------------------
+main :: IO()
+main = do
+    args <- getArgs
+    msg <- getLine
+    let 
+        (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "*" else getOutput msg in
+        case myExitCode of
+            100 -> do exitWith $ ExitFailure myExitCode
+            101 -> do exitWith $ ExitFailure myExitCode
+            _ -> do
+                putStrLn myStdOut
+                hPutStrLn stderr myErrOut
+                case myExitCode of
+                    0 -> exitWith ExitSuccess
+                    _ -> exitWith $ ExitFailure myExitCode
 
 getOutput :: String -> (String, String, Int)
 getOutput jsonMsg = 
@@ -447,21 +445,6 @@ getOutput jsonMsg =
                             in
                                 (myStdOut, myErrOut, myExitCode)
 
-main :: IO()
-main = do
-    args <- getArgs
-    msg <- getLine
-    let 
-        (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "*" else getOutput msg in
-        case myExitCode of
-            100 -> do exitWith $ ExitFailure myExitCode
-            101 -> do exitWith $ ExitFailure myExitCode
-            _ -> do
-                putStrLn myStdOut
-                hPutStrLn stderr myErrOut
-                case myExitCode of
-                    0 -> exitWith ExitSuccess
-                    _ -> exitWith $ ExitFailure myExitCode
 
 ------------------------------------------------------------
 ------------------------For getOutput-----------------------
@@ -472,7 +455,6 @@ parseToLilBoard str =
     case convert 3 (parse str) of
         Left a -> error $ show a
         Right a -> a
-    
 
 eitherParseToLilBoard :: String -> Either String To
 eitherParseToLilBoard str = 
@@ -482,7 +464,6 @@ eitherParseToLilBoard str =
             case convert 3 a of
                 Left b -> Left $ show b
                 Right b -> Right b
-
 
 ---------
 
@@ -569,29 +550,25 @@ sepBoardsFromScores ::  [(To, Int)] -> ([To], [Int]) -> ([To], [Int])
 sepBoardsFromScores [] acc = acc
 sepBoardsFromScores (h:t) (boards, scores) = sepBoardsFromScores t (boards ++ [fst h], scores ++ [snd h])
 
-------------------------TESTTTT------------------------------------
 
---con =
-    --
+-------------------------------------------------------------------
+------------------------           ----------------------------
+-------------------------------------------------------------------
 
-boardOneGenScoresTest boards = 
-    let
-        (boardArr, scores) = boardOneGenScores boards
-    in
-        boardArr
-        
---[[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'X')],[(0,'b'),(1,'X'),(2,'b')]],[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'b')],[(0,'X'),(1,'X'),(2,'b')]],[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'b')],[(0,'b'),(1,'X'),(2,'X')]]]
+whichSqBlank :: To -> Maybe (Int, Int) 
+whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
+    | (snd sq1 == 'b') = Just (0, 0)
+    | (snd sq2 == 'b') = Just (0, 1)
+    | (snd sq3 == 'b') = Just (0, 2)
+    | (snd sq4 == 'b') = Just (1, 0)
+    | (snd sq5 == 'b') = Just (1, 1)
+    | (snd sq6 == 'b') = Just (1, 2)
+    | (snd sq7 == 'b') = Just (2, 0)
+    | (snd sq8 == 'b') = Just (2, 1)
+    | (snd sq9 == 'b') = Just (2, 2)
+    | otherwise = Nothing
+------------------------------------------------------------
 
-boardStr :: To -> String
-boardStr board = getStrToPrintStatusMsg (board, "")
-
-strToIO :: String -> IO()
-strToIO str = putStr str
-
-strArrToIO :: [String] -> IO()
-strArrToIO str = putStr $ unlines str
-
-------------------------TESTTTT------------------------------------
 
 
 genAllPossibleMoves :: To -> To -> [To] -> [To]
@@ -886,7 +863,16 @@ seeM boardArr =
     let
         boardArrStr = map boardStr boardArr
     in
-        strArrToIO $ boardArrStr
+        strArrToIO $ boardArrStr    
+
+strToIO :: String -> IO()
+strToIO str = putStr str
+
+strArrToIO :: [String] -> IO()
+strArrToIO str = putStr $ unlines str
+
+boardStr :: To -> String
+boardStr board = getStrToPrintStatusMsg (board, "")
 
 ------------------------------------------------------
 
