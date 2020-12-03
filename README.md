@@ -1,6 +1,6 @@
-#Functional programming laboratory work 3 Vilnius University
+# Functional programming laboratory work 3 Vilnius University
 
-#Running
+# Running
 
 ## Start two bots one against another
 tic-tac-toe-defender $TASK_NUMBER $PATH_TO_YOUR_BOT_EXECUTABLE  
