@@ -397,17 +397,6 @@ xyvArrayToJson (h:t) =
         "" -> jsonMap[("last", moveJsonStr)]
         a -> jsonMap[("prev", a), ("last", moveJsonStr)]
 
--- xyvArrayToJson :: [(Int, Int, Char)] -> String
--- xyvArrayToJson [] = ""
--- xyvArrayToJson (h:t) = 
---     let
---         moveJsonStr = xyvTupleToLMDL h
---     in
---         case xyvArrayToJson t of
---         "" -> jsonMap[("last", moveJsonStr)]
---         a -> error $ show (a)
---             --jsonMap[("prev", a), ("last", moveJsonStr)]
-
 xyvTupleToLMDL :: (Int, Int, Char) -> String
 xyvTupleToLMDL (x, y, v) = jsonList [jsonMap [("data", (jsonList [jsonInt x, jsonInt y, jsonString [v]]))]]
 
@@ -449,64 +438,6 @@ jsonString a = show (length a) ++ ":" ++ a
 
 
 -------------------MAINS-----------------------
-
--- 0 All good, we are in the middle of a g
--- 10 I just performed the last move, I won
--- 12 I just performed the last move, a draw
--- 20 I cannot perform any moves because game is already ended (board is full or there is a winner)
--- 100 Incoming message is malformed (bad syntax)
--- 101 Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)
-
--- getOutput :: String -> (String, String, Int)
--- getOutput jsonMsg = 
---     case eitherParseToLilBoard jsonMsg of
---         Left "CantParse" ->
---             let
---                 myStdOut = jsonMsg
---                 myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is malformed (bad syntax)")
---                 myExitCode = 100
---             in
---                 (myStdOut, myErrOut, myExitCode)
---         Left "Order" -> 
---             let
---                 myStdOut = jsonMsg
---                 myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)")
---                 myExitCode = 101
---             in
---                 (myStdOut, myErrOut, myExitCode)
---         Left "Duplicates" ->
---             let
---                 myStdOut = jsonMsg
---                 myErrOut = getStrToPrintStatusMsg ([[]], "Incoming message is semanticallly invalid (e.g. 2 moves to a same cell or game is already ended)")
---                 myExitCode = 101
---             in
---                 (myStdOut, myErrOut, myExitCode)
---         Right a ->
---             let
---                 board = populateBlankVals a
---                 boardAfterMyTurn = maybeTakeTurnRetLil board
---             in
---                 case boardAfterMyTurn of
---                     Nothing -> 
---                         let
---                             myStdOut = jsonMsg
---                             myErrOut = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
---                             myExitCode = 20
---                         in
---                             (myStdOut, myErrOut, myExitCode)
---                     Just boardAfterMyTurn ->
---                         let
---                             myStdOut = takeTurnIfPossibleRetJsonMessage jsonMsg
---                             (myMoveX, myMoveY, myMoveV) = findDif board boardAfterMyTurn
---                             myErrOut = getStrToPrintStatusMsg (boardAfterMyTurn, ("My Turn is " ++ (show myMoveV) ++ " to " ++ "(" ++ (show myMoveX) ++ "," ++ (show myMoveY) ++ ")"))
---                             myExitCode 
---                                 | (isWin boardAfterMyTurn /= 'b') = 10
---                                 | (isBoardFull boardAfterMyTurn) = 12
---                                 | otherwise = 0
---                         in
---                             (myStdOut, myErrOut, myExitCode)
-
-                            
 
 getOutput :: String -> (String, String, Int)
 getOutput jsonMsg = 
@@ -563,44 +494,6 @@ getOutput jsonMsg =
                                     | otherwise = 0
                             in
                                 (myStdOut, myErrOut, myExitCode)
-
-
-
--- main :: IO()
--- main = do
---     args <- getArgs
---     --let 
---         --args = ["O"] 
---     --in
---     case head args of
---         "X" -> do
---             msg <- getLine
---             let 
---                 (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
---                 case myExitCode of
---                     100 -> do exitWith $ ExitFailure myExitCode
---                     101 -> do exitWith $ ExitFailure myExitCode
---                     _ -> do
---                         putStrLn myStdOut
---                         hPutStrLn stderr myErrOut
---                         case myExitCode of
---                             0 -> exitWith ExitSuccess
---                             _ -> exitWith $ ExitFailure myExitCode
---         "O" -> do
---             msg <- getLine
---             let
---                 (myStdOut, myErrOut, myExitCode) = getOutput msg in 
---                 case myExitCode of
---                     100 -> do exitWith $ ExitFailure myExitCode
---                     101 -> do exitWith $ ExitFailure myExitCode
---                     _ -> do
---                         putStrLn myStdOut
---                         hPutStrLn stderr myErrOut
---                         case myExitCode of
---                             0 -> exitWith ExitSuccess
---                             _ -> exitWith $ ExitFailure myExitCode
-                        
-
 
 main :: IO()
 main = do
@@ -676,53 +569,6 @@ findWinStep board =
         case findIndex (== (snd player)) allPossScores of
             Nothing -> Nothing
             Just i -> Just $ allPossMoves !! i
-            
--- findWinStep :: To -> Maybe To
--- findWinStep board = 
---     let
---         allPossMoves = genAllPossibleMoves board board []
---         allPossScores = calcAllBoardsScore allPossMoves []
---     in
---         case findIndex (== 50) allPossScores of
---             Nothing -> Nothing
---             Just i -> Just $ allPossMoves !! i
-
-
-
--- d4:prevd4:prevd4:prevd4:prevd4:lastld4:datali1ei2e1:Xeeee4:lastld4:datali0ei1e1:Oeeee4:lastld4:datali2ei0e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee
--- X | O | X
--- ---------
--- O |   |
--- ---------
---   | X |
-
--- d4:prevd4:prevd4:prevd4:prevd4:prevd4:lastld4:datali1ei1e1:Oeeee4:lastld4:datali1ei2e1:Xeeee4:lastld4:datali0ei1e1:Oeeee4:lastld4:datali2ei0e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee
--- X | O | X
--- ---------
--- O | O |
--- ---------
---   | X |
-
---d4:prevd4:prevd4:prevd4:prevd4:prevd4:prevd4:lastld4:datali2ei2e1:Xeeee4:lastld4:datali1ei1e1:Oeeee4:lastld4:datali1ei2e1:Xeeee4:lastld4:datali0ei1e1:Oeeee4:lastld4:datali2ei0e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee
--- X | O | X
--- ---------
--- O | O | 
--- ---------
---   | X | X
-
--- d4:prevd4:prevd4:prevd4:lastld4:datali2ei0e1:Oeeee4:lastld4:datali0ei1e1:Xeeee4:lastld4:datali1ei0e1:Oeeee4:lastld4:datali0ei0e1:Xeeee
--- X | O | O
--- ---------
--- X |   | 
--- ---------
---   |   |  
-
-test = 
-    let
-        board = populateBlankVals $ parseToLilBoard $ "de"
-    in
-        miniMax board
-
 -------------------------minimax--------------------------
 
 boardOneGenScores board =
@@ -1073,73 +919,41 @@ maybeFindDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : s
     | otherwise = Nothing
 
 
-----------------------USELESSS------------------
--- ioAllTurns :: [String] -> IO()
--- ioAllTurns arr = 
---     let
---         str = unlines arr
---     in
---         putStr str
 
--- playWYourself :: String -> [String] -> IO()
--- playWYourself msg acc =
---     let
---         acc' = acc ++ [getStrToPutStatusMsg msg]
---     in
---         case playMsg msg of
-    --         Left _ -> ioAllTurns acc'
-    --         Right newMsg -> playWYourself newMsg acc'
-
-
--- playMsg :: String -> Either String String
--- playMsg msg =
---     let
---         board = populateBlankVals $ parseToLilBoard msg
---         newMessage = takeTurnRetJsonMessage msg
---     in
---         if (isBoardFull board || (isWin board /= 'b'))
---             then Left msg
---             else Right newMessage
-----fix, function changed------
-
-
--- getStrToPutStatusMsg :: To -> String
--- getStrToPutStatusMsg board 
---     | (isBoardFull board || (isWin board /= 'b')) = getStrToPrintStatusMsg (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
---     | otherwise = getStrToPrintStatusMsg (takeTurnRetLil board, "")
-
-    --in
-        --myExitCode
-        -- do
-        -- iAmX <- getArgs --fix
-        -- putStrLn "Waiting for opponent's turn"
-        -- --GOOD--     jsonMsg <- getLine
-        -- --stderr
-        -- putStrLn $ takeTurnRetJsonMessage jsonMsg
-        -- --exitWith
-
--- test = 
---     let
---         msg = takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage $ takeTurnIfPossibleRetJsonMessage message
---         board = populateBlankVals $ parseToLilBoard msg
---     in
---         case maybeTakeTurnRetLil board of
---             Nothing -> putStrLn $ getStrToPrintStatusMsg (board, test)
---             Just a -> putStrLn $ getStrToPrintStatusMsg (board, takeTurnIfPossibleRetJsonMessage test)
     
 
--- myMain jsonMsg = 
---     let
---         case eitherParseToLilBoard jsonMsg of
---             Order -> 101
---             Duplicates -> 100
---             a -> 
---                 let
---                     board = populateBlankVals a
---                     msgForStatus = if (isBoardFull board || (isWin board /= 'b'))
---                     then getStrToPrintStatusMsg (board ,"I cannot perform any moves because game is already ended (board is full or there is a winner)")
---                     else getStrToPrintStatusMsg (takeTurnRetLil board ,"")
---                 in
-        
---     in
---         ""
+
+-- main :: IO()
+-- main = do
+--     args <- getArgs
+--     --let 
+--         --args = ["O"] 
+--     --in
+--     case head args of
+--         "X" -> do
+--             msg <- getLine
+--             let 
+--                 (myStdOut, myErrOut, myExitCode) = if (msg == "*") then getOutput "de" else getOutput msg in
+--                 case myExitCode of
+--                     100 -> do exitWith $ ExitFailure myExitCode
+--                     101 -> do exitWith $ ExitFailure myExitCode
+--                     _ -> do
+--                         putStrLn myStdOut
+--                         hPutStrLn stderr myErrOut
+--                         case myExitCode of
+--                             0 -> exitWith ExitSuccess
+--                             _ -> exitWith $ ExitFailure myExitCode
+--         "O" -> do
+--             msg <- getLine
+--             let
+--                 (myStdOut, myErrOut, myExitCode) = getOutput msg in 
+--                 case myExitCode of
+--                     100 -> do exitWith $ ExitFailure myExitCode
+--                     101 -> do exitWith $ ExitFailure myExitCode
+--                     _ -> do
+--                         putStrLn myStdOut
+--                         hPutStrLn stderr myErrOut
+--                         case myExitCode of
+--                             0 -> exitWith ExitSuccess
+--                             _ -> exitWith $ ExitFailure myExitCode
+                        
