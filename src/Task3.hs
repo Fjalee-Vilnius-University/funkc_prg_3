@@ -634,48 +634,12 @@ isBoardDoomed board =
         Just _ -> True
 
 ---------
-       
-takeTurnRetJsonMessage :: String -> String
-takeTurnRetJsonMessage msg = convertBack $ takeTurnRetTurnOrder msg
-
-takeTurnIfPossibleRetJsonMessage :: String -> String
-takeTurnIfPossibleRetJsonMessage msg = 
-    case maybeTakeTurnRetTurnOrder msg of
-        Nothing -> msg
-        Just a -> convertBack a
 
 takeTurnIfPossibleRetJsonMessage' :: String -> String
 takeTurnIfPossibleRetJsonMessage' msg = 
     case maybeTakeTurnRetTurnOrder' msg of
         Nothing -> msg
-        Just a -> convertBack a     
-
-    
-takeTurnRetTurnOrder :: String -> ([Int], [Int], [Char])
-takeTurnRetTurnOrder msg = 
-    let
-        oldBoard = populateBlankVals $ parseToLilBoard msg
-        newBoard = takeTurnRetLil oldBoard
-        newMove = findDif oldBoard newBoard
-    in
-        case getAllTurnsArr (parse msg) ([], [], []) of
-            Left a -> error  ("error received: Left " ++ show a)
-            Right movesOrder -> addMoveToOrderedMoves movesOrder newMove
-
-maybeTakeTurnRetTurnOrder :: String -> Maybe ([Int], [Int], [Char])
-maybeTakeTurnRetTurnOrder msg = 
-    let
-        oldBoard = populateBlankVals $ parseToLilBoard msg
-    in 
-        case (maybeTakeTurnRetLil oldBoard) of
-            Nothing -> Nothing
-            Just newBoard ->
-                case (maybeFindDif oldBoard newBoard) of
-                    Nothing -> Nothing
-                    Just newMove -> 
-                        case getAllTurnsArr (parse msg) ([], [], []) of
-                            Left _ -> Nothing
-                            Right movesOrder -> Just $ addMoveToOrderedMoves movesOrder newMove
+        Just a -> convertBack a
 
 maybeTakeTurnRetTurnOrder' :: String -> Maybe ([Int], [Int], [Char])
 maybeTakeTurnRetTurnOrder' msg = 
