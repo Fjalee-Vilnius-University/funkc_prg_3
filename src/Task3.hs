@@ -315,44 +315,6 @@ delFromMap wholeMap itemDel =
 -------------------------------------------------------------------
 ------------------------           ----------------------------
 -------------------------------------------------------------------
-
-start :: String -> IO ()
-start msg =
-    let
-        board = populateBlankVals $ parseToLilBoard msg
-    in
-        if (isBoardFull board || (isWin board /= 'b'))
-            then printStatusMessage $ (board, "I cannot perform any moves because game is already ended (board is full or there is a winner)")
-            else printStatusMessage $ (takeTurnRetLil board, "Message is not implemented")
-
-populateBlankVals :: To -> To
-populateBlankVals (row1 : row2 : row3 : []) 
-    | (length row1 /= 3) = populateBlankVals ((addLowestBlank row1 0) : row2 : row3 : [])
-    | (length row2 /= 3) = populateBlankVals (row1 : (addLowestBlank row2 0) : row3 : [])
-    | (length row3 /= 3) = populateBlankVals (row1 : row2 : (addLowestBlank row3 0) : [])
-    | otherwise = (row1 : row2 : row3 : []) 
-populateDummyVals :: Show a1 => a1 -> a2
-populateDummyVals b = error $ "Cannot populate board with blank values: Invalid board " ++ show b
-
-
-
-
-addLowestBlank :: [(Int, Char)] -> Int -> [(Int, Char)]
-addLowestBlank row acc  
-    | (length row < acc+1) = insertAt (acc, 'b') acc row
-    | (fst (row !! acc) == acc) = addLowestBlank row (acc+1)
-    | otherwise = insertAt (acc, 'b') acc row
-
-calcBlankSq :: To -> Int
-calcBlankSq ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : []) : []) = calcPlayerTurns allTurnsValue 'b' 0
-    where
-        allTurnsValue = [snd sq1, snd sq2, snd sq3, snd sq4, snd sq5, snd sq6, snd sq7, snd sq8, snd sq9]
-
-isSqBlank :: (Int, Char) -> Int
-isSqBlank sq
-    | (snd sq == 'b') = 1
-    | otherwise = 0
-
 whichSqBlank :: To -> Maybe (Int, Int) 
 whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) 
     | (snd sq1 == 'b') = Just (0, 0)
@@ -365,16 +327,6 @@ whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 :
     | (snd sq8 == 'b') = Just (2, 1)
     | (snd sq9 == 'b') = Just (2, 2)
     | otherwise = Nothing
-
-printStatusMessage :: (To, String) -> IO ()
-printStatusMessage (board, msg) = putStr $ unlines $ [msg, getStrToDrawBoard board]
-
-
-ifBSpace :: Char -> Char
-ifBSpace ch
-    |(ch == 'b') = ' '
-    | otherwise = ch
-
 
 -------------------------------------------------------------------
 --------------Convert board to message for another bot-------------
@@ -511,11 +463,6 @@ main = do
                     0 -> exitWith ExitSuccess
                     _ -> exitWith $ ExitFailure myExitCode
 
-
-
-
-
-    --msg <- getLine
 ------------------------------------------------------------
 ------------------------For getOutput-----------------------
 ------------------------------------------------------------
@@ -632,16 +579,6 @@ boardOneGenScoresTest boards =
         (boardArr, scores) = boardOneGenScores boards
     in
         boardArr
-
-see1 :: To -> IO ()
-see1 board = strToIO $ boardStr board
-
-seeM :: [To] -> IO ()
-seeM boardArr = 
-    let
-        boardArrStr = map boardStr boardArr
-    in
-        strArrToIO $ boardArrStr
         
 --[[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'X')],[(0,'b'),(1,'X'),(2,'b')]],[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'b')],[(0,'X'),(1,'X'),(2,'b')]],[[(0,'X'),(1,'O'),(2,'X')],[(0,'O'),(1,'O'),(2,'b')],[(0,'b'),(1,'X'),(2,'X')]]]
 
@@ -918,10 +855,40 @@ maybeFindDif ((sq1a : sq2a : sq3a : []) : (sq4a : sq5a : sq6a : [])  : (sq7a : s
     | (sq9a /= sq9b) = Just (2, 2, takeNonB (snd sq9a) (snd sq9b))
     | otherwise = Nothing
 
+populateBlankVals :: To -> To
+populateBlankVals (row1 : row2 : row3 : []) 
+    | (length row1 /= 3) = populateBlankVals ((addLowestBlank row1 0) : row2 : row3 : [])
+    | (length row2 /= 3) = populateBlankVals (row1 : (addLowestBlank row2 0) : row3 : [])
+    | (length row3 /= 3) = populateBlankVals (row1 : row2 : (addLowestBlank row3 0) : [])
+    | otherwise = (row1 : row2 : row3 : []) 
+populateDummyVals :: Show a1 => a1 -> a2
+populateDummyVals b = error $ "Cannot populate board with blank values: Invalid board " ++ show b
 
-
+addLowestBlank :: [(Int, Char)] -> Int -> [(Int, Char)]
+addLowestBlank row acc  
+    | (length row < acc+1) = insertAt (acc, 'b') acc row
+    | (fst (row !! acc) == acc) = addLowestBlank row (acc+1)
+    | otherwise = insertAt (acc, 'b') acc row
     
+ifBSpace :: Char -> Char
+ifBSpace ch
+    |(ch == 'b') = ' '
+    | otherwise = ch
+-------------------------------------------------------
+---------------------TEST------------------------------
+-------------------------------------------------------
 
+see1 :: To -> IO ()
+see1 board = strToIO $ boardStr board
+
+seeM :: [To] -> IO ()
+seeM boardArr = 
+    let
+        boardArrStr = map boardStr boardArr
+    in
+        strArrToIO $ boardArrStr
+
+------------------------------------------------------
 
 -- main :: IO()
 -- main = do
