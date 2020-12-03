@@ -3,7 +3,7 @@
 #Running
 
 ## Start two bots one against another
-tic-tac-toe-defender $TASK_NUMBER $PATH_TO_YOUR_BOT_EXECUTABLE
+tic-tac-toe-defender $TASK_NUMBER $PATH_TO_YOUR_BOT_EXECUTABLE  
 tic-tac-toe-offender $TASK_NUMBER $PATH_TO_YOUR_BOT_EXECUTABLE
 ```bash
 tic-tac-toe-defender 9 C:\Users\Rytis\Desktop\funkc_prg_3\stack-project\.stack-work\dist\29cc6475\build\stack-project-exe\stack-project-exe.exe
@@ -13,8 +13,8 @@ tic-tac-toe-offender 9 C:\Users\Rytis\Desktop\funkc_prg_3\stack-project\.stack-w
 ```
 
 ## Start one bot with another input
-$PATH_TO_YOUR_BOT_EXECUTABLE O
-enter
+$PATH_TO_YOUR_BOT_EXECUTABLE O  
+enter  
 $MY_CUSTOM_INPUT
 ```bash
 C:\Users\Rytis\Desktop\funkc_prg_3\stack-project\.stack-work\dist\29cc6475\build\stack-project-exe\stack-project-exe.exe O 
@@ -50,7 +50,9 @@ Change Task3.hs `module Main where` to `module Task3 where`
 to app/Main.hs add `import Task3`, and imports needed for copied main
 
 cmd command 
-stack build
+```bash
+stack build  
+``` 
 
 ### Task readme
 https://git.mif.vu.lt/vipo/fp-2020/blob/master/README.md
