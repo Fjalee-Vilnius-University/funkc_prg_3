@@ -467,38 +467,15 @@ eitherParseToLilBoard str =
 
 ---------
 
-takeTurnRetLil :: To -> To
-takeTurnRetLil board =
-    case findWinStep board of
-        Just b -> b
-        Nothing -> findNonDoomedBoard $ genAllPossibleMoves board board []
-   
-maybeTakeTurnRetLil :: To -> Maybe To
-maybeTakeTurnRetLil board =
-    case findWinStep board of
-        Just b -> Just b
-        Nothing -> maybeFindNonDoomedBoard $ genAllPossibleMoves board board []
-
 maybeTakeTurnRetLil' :: To -> Maybe To
 maybeTakeTurnRetLil' board = 
     case miniMax board of
         ([], _) -> Nothing
         (a, _) -> Just a
-
-findWinStep :: To -> Maybe To
-findWinStep board = 
-    let
-        player
-            | isXTurn board = ('X', 10)
-            | otherwise = ('O', -10)
-        allPossMoves = genAllPossibleMoves board board []
-        allPossScores = calcAllBoardsScore allPossMoves []
-    in
-        case findIndex (== (snd player)) allPossScores of
-            Nothing -> Nothing
-            Just i -> Just $ allPossMoves !! i
+        
 -------------------------minimax--------------------------
 
+boardOneGenScores :: To -> ([To], [Int])
 boardOneGenScores board =
     let
         allPossMoves = genAllPossibleMoves board board []
@@ -507,7 +484,7 @@ boardOneGenScores board =
         (allPossMoves, allPossScores)
 
 pickBoardWithScore :: [To] -> [Int] -> Int -> Maybe To
-pickBoardWithScore boards scores player = --error $ show boards
+pickBoardWithScore boards scores player =
     case findIndex (== player) scores of
         Nothing -> Nothing
         Just i -> Just $ boards !! i
@@ -546,11 +523,6 @@ miniMax board =
                                                     Just i -> (i, 0)
                                                     Nothing -> (head fstGenBoards, -(snd player))
 
-sepBoardsFromScores ::  [(To, Int)] -> ([To], [Int]) -> ([To], [Int])
-sepBoardsFromScores [] acc = acc
-sepBoardsFromScores (h:t) (boards, scores) = sepBoardsFromScores t (boards ++ [fst h], scores ++ [snd h])
-
-
 -------------------------------------------------------------------
 ------------------------           ----------------------------
 -------------------------------------------------------------------
@@ -568,8 +540,6 @@ whichSqBlank ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 :
     | (snd sq9 == 'b') = Just (2, 2)
     | otherwise = Nothing
 ------------------------------------------------------------
-
-
 
 genAllPossibleMoves :: To -> To -> [To] -> [To]
 genAllPossibleMoves board genBoard acc = 
@@ -592,46 +562,6 @@ genPossibleMove orgBoard board =
                 newBoard = replace newRowForBoard row board
             in
                 Right (newBoardAfterMove, newBoard)
-
-calcAllBoardsScore :: [To] -> [Int] -> [Int]
-calcAllBoardsScore [] acc = acc
-calcAllBoardsScore (h:t) acc = calcAllBoardsScore t (acc ++ [calcScore h])
-
-calcAllBoardsScore' :: [To] -> [Int]
-calcAllBoardsScore' [] = error "empty array shouldnt be passed into calcAllBoardsScore'"
-calcAllBoardsScore' arr = calcAllBoardsScore arr []
-
-calcScore :: To -> Int
-calcScore board = 
-    let
-        board' = populateBlankVals board
-    in
-        case isWin board' of
-            'X' -> 10
-            'O' -> -10
-            'b' 
-               | (isBoardFull board') -> 0
-               | otherwise -> 50
-
-findNonDoomedBoard :: [To] -> To
-findNonDoomedBoard [] = error "I Lost ayayaya"
-findNonDoomedBoard (board:remBoards) =
-    case isBoardDoomed board of
-        False -> board
-        True -> findNonDoomedBoard remBoards
-
-maybeFindNonDoomedBoard :: [To] -> Maybe To
-maybeFindNonDoomedBoard [] = Nothing
-maybeFindNonDoomedBoard (board:remBoards) =
-    case isBoardDoomed board of
-        False -> Just board
-        True -> maybeFindNonDoomedBoard remBoards
-
-isBoardDoomed :: To -> Bool
-isBoardDoomed board = 
-    case findWinStep board of
-        Nothing -> False
-        Just _ -> True
 
 ---------
 
@@ -657,22 +587,7 @@ maybeTakeTurnRetTurnOrder' msg =
                             Right movesOrder -> Just $ addMoveToOrderedMoves movesOrder newMove
 
 ----------
-
-getStrToPrintStatusMsg :: (To, String) -> String
-getStrToPrintStatusMsg (board, msg) = unlines $ [msg, getStrToDrawBoard board]
-
-getStrToDrawBoard :: To -> String
-getStrToDrawBoard board =
-    let
-        board' = replaceAllBWithSpace board
-        ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) = board'
-    in
-        unlines $ [[snd sq1] ++  " | " ++  [snd sq2] ++ " | " ++ [snd sq3] ,
-                   "---------",
-                   [snd sq4] ++  " | " ++  [snd sq5] ++ " | " ++ [snd sq6] ,
-                   "---------",
-                   [snd sq7] ++  " | " ++  [snd sq8] ++ " | " ++ [snd sq9]]
-        
+      
 addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
 addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = ([x] ++ xs, [y] ++ ys, [v] ++ vs)
 
@@ -815,6 +730,27 @@ ifBSpace :: Char -> Char
 ifBSpace ch
     |(ch == 'b') = ' '
     | otherwise = ch
+
+sepBoardsFromScores ::  [(To, Int)] -> ([To], [Int]) -> ([To], [Int])
+sepBoardsFromScores [] acc = acc
+sepBoardsFromScores (h:t) (boards, scores) = sepBoardsFromScores t (boards ++ [fst h], scores ++ [snd h])
+
+getStrToPrintStatusMsg :: (To, String) -> String
+getStrToPrintStatusMsg (board, msg) = unlines $ [msg, getStrToDrawBoard board]
+
+getStrToDrawBoard :: To -> String
+getStrToDrawBoard board =
+    let
+        board' = replaceAllBWithSpace board
+        ((sq1 : sq2 :sq3 : []) : (sq4 : sq5 :sq6 : [])  : (sq7 : sq8 :sq9 : [])  : []) = board'
+    in
+        unlines $ [[snd sq1] ++  " | " ++  [snd sq2] ++ " | " ++ [snd sq3] ,
+                   "---------",
+                   [snd sq4] ++  " | " ++  [snd sq5] ++ " | " ++ [snd sq6] ,
+                   "---------",
+                   [snd sq7] ++  " | " ++  [snd sq8] ++ " | " ++ [snd sq9]]
+  
+
 -------------------------------------------------------
 ---------------------TEST------------------------------
 -------------------------------------------------------
@@ -837,6 +773,27 @@ strArrToIO str = putStr $ unlines str
 
 boardStr :: To -> String
 boardStr board = getStrToPrintStatusMsg (board, "")
+
+calcAllBoardsScore' :: [To] -> [Int]
+calcAllBoardsScore' [] = error "empty array shouldnt be passed into calcAllBoardsScore'"
+calcAllBoardsScore' arr = calcAllBoardsScore arr []
+
+calcAllBoardsScore :: [To] -> [Int] -> [Int]
+calcAllBoardsScore [] acc = acc
+calcAllBoardsScore (h:t) acc = calcAllBoardsScore t (acc ++ [calcScore h])
+
+calcScore :: To -> Int
+calcScore board = 
+    let
+        board' = populateBlankVals board
+    in
+        case isWin board' of
+            'X' -> 10
+            'O' -> -10
+            'b' 
+               | (isBoardFull board') -> 0
+               | otherwise -> 50
+
 
 ------------------------------------------------------
 
