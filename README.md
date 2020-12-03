@@ -44,7 +44,7 @@ stack build
 ### Add Task3.hs code to stack project
 - copy Task3.hs file into src folder in stack project
     
-- change app/Main.hs in stack project 
+- change app/Main.hs in stack project  
 add main function from Task3.hs to app/Main.hs  
 Change Task3.hs `module Main where` to `module Task3 where`  
 to app/Main.hs add `import Task3`, and imports needed for copied main  
