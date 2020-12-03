@@ -435,7 +435,7 @@ getOutput jsonMsg =
                                 (myStdOut, myErrOut, myExitCode)
                         Just boardAfterMyTurn ->
                             let
-                                myStdOut = takeTurnIfPossibleRetJsonMessage' jsonMsg
+                                myStdOut = takeTurnIfPossibleRetJsonMessage' jsonMsg -- not using boardAfterMyTurn because it doesnt show order of the moves to convert to jsonMsg
                                 (myMoveX, myMoveY, myMoveV) = findDif board boardAfterMyTurn
                                 myErrOut = getStrToPrintStatusMsg (boardAfterMyTurn, ("My Turn is " ++ (show myMoveV) ++ " to " ++ "(" ++ (show myMoveX) ++ "," ++ (show myMoveY) ++ ")"))
                                 myExitCode 
@@ -512,19 +512,19 @@ miniMax board =
                                 boardsNScores = map miniMax fstGenBoards
                                 (futBoards, futScores) = sepBoardsFromScores boardsNScores ([], [])
                             in
-                                case board of
                                     ----------THIS LINE IS FOR DEBUGING WHEN BOARD IS INPUTED---------------------------
+                                --case board of
                                     --[[(0, 'O'), (1, 'b'), (2, 'X')], [(0, 'b'), (1, 'b'), (2, 'X')], [(0, 'b'), (1, 'b'), (2, 'b')]] -> error $ show (futBoards, futScores)
                                     ------------------------------------------------------------------------------------
-                                    _ -> case pickBoardWithScore fstGenBoards futScores (snd player) of
-                                            Just i -> (i, snd player)
-                                            Nothing -> 
-                                                case pickBoardWithScore fstGenBoards futScores 0 of
-                                                    Just i -> (i, 0)
-                                                    Nothing -> (head fstGenBoards, -(snd player))
+                                    case pickBoardWithScore fstGenBoards futScores (snd player) of
+                                        Just i -> (i, snd player)
+                                        Nothing -> 
+                                            case pickBoardWithScore fstGenBoards futScores 0 of
+                                                Just i -> (i, 0)
+                                                Nothing -> (head fstGenBoards, -(snd player))
 
 -------------------------------------------------------------------
-------------------------           ----------------------------
+------------------------           --------------------------------
 -------------------------------------------------------------------
 
 whichSqBlank :: To -> Maybe (Int, Int) 
@@ -587,7 +587,7 @@ maybeTakeTurnRetTurnOrder' msg =
                             Right movesOrder -> Just $ addMoveToOrderedMoves movesOrder newMove
 
 ----------
-      
+
 addMoveToOrderedMoves :: ([Int], [Int], [Char]) -> (Int, Int, Char) -> ([Int], [Int], [Char])
 addMoveToOrderedMoves (xs, ys, vs) (x, y, v) = ([x] ++ xs, [y] ++ ys, [v] ++ vs)
 
